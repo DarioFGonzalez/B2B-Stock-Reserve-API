@@ -1,12 +1,14 @@
+const createError = require('../../utils/errorBuilder');
 const { getInvoiceWithItems } = require('../../utils/invoiceUtils');
 const { validateId } = require('../../utils/validations');
 
 const deliverInvoice = async (req, res) => {
-    const { id } = req.params;
-    validateId(id);
     let connection;
     
     try {
+        const { id } = req.params;
+        validateId(id);
+        
         connection = await req.pool.getConnection();
         
         await connection.beginTransaction();
@@ -20,14 +22,8 @@ const deliverInvoice = async (req, res) => {
 
         const invoice = await getInvoiceWithItems(connection, id);
 
-        if(invoice.status!=='confirmed')
-        {
-            throw Object.assign( new Error('Invoice no previamente confirmado'),
-            {
-                status: 400,
-                code: 'CANNOT_DELIVER_AN_UNCONFIRMED_INVOICE',
-                timestamp: new Date().toISOString()
-            })
+        if(invoice.status!=='confirmed') {
+            throw createError('Invoice no previamente confirmado', 403, 'ONLY_CONFIRMED_INVOICES_CAN_BE_DELIVERED');
         }
 
         invoice.products.forEach( (invoice_item) => {
@@ -43,14 +39,8 @@ const deliverInvoice = async (req, res) => {
                 
                 ids.push(invoice_item.product_id);
             }
-            else
-            {
-                throw Object.assign( new Error(`Error con stock||reserved_stock en producto ID: ${invoice_item.product_id}`),
-                {
-                    status: 409,
-                    code: 'ERROR_CALCULATING_STOCK',
-                    timestamp: new Date().toISOString()
-                })
+            else {
+                throw createError(`Error con stock||reserved_stock en producto ID: ${invoice_item.product_id}`, 500, 'DATA_CONSISTENCY_ERROR');
             }
         })
 
@@ -76,14 +66,8 @@ const deliverInvoice = async (req, res) => {
         WHERE id = ?`;
 
         const [result] = await connection.query(updateInvoiceQuery, [ id ]);
-        if(result.affectedRows===0)
-        {
-            throw Object.assign( new Error('No se actualizó el invoice en el paso final'),
-            {
-                status: 500,
-                code: 'COULDNT_UPDATE_INVOICE',
-                timestamp: new Date().toISOString()
-            })
+        if(result.affectedRows===0) {
+            throw createError('No se actualizó el invoice en el paso final', 500, 'COULDNT_UPDATE_INVOICE');
         }
 
         await connection.commit();

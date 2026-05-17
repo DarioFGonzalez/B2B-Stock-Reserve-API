@@ -211,19 +211,12 @@ const invoiceByQueryBuilder =(queries) =>
 
     if(client_id)
     {
-        if(isValidUUID(client_id))
-        {
+        if(isValidUUID(client_id)) {
             conditions.push('client_id = ?');
             values.push(client_id);
         }
-        else
-        {
-            throw Object.assign( new Error('Formato del ID recibido por query inválido'),
-            {
-                status: 400,
-                code: 'INVALID_ID_FORMAT',
-                timestamp: new Date().toISOString()
-            })
+        else {
+            throw createError('El formato del ID recibido por query es inválido', 400, 'INVALID_ID_FORMAT');
         }
     }
 
@@ -238,12 +231,7 @@ const invoiceByQueryBuilder =(queries) =>
         }
         else
         {
-            throw Object.assign( new Error(`STATUS inválido, valores permitidos: ${allowedStatus.join(', ')}`),
-            {
-                status: 400,
-                code: 'INVALID_STATUS',
-                timestamp: new Date().toISOString()
-            })
+            throw createError(`STATUS inválido, valores permitidos: ${allowedStatus.join(', ')}`, 400, 'INVALID_STATUS');
         }
     }
 
@@ -256,14 +244,8 @@ const invoiceByQueryBuilder =(queries) =>
             conditions.push('payment_terms = ?');
             values.push(payment_terms);
         }
-        else
-        {
-            throw Object.assign( new Error(`Término de pago inválido, valores válidos: ${allowedPaymentTerms.join(', ')}`),
-            {
-                status: 400,
-                code: 'INVALID_PAYMENT_TERMS',
-                timestamp: new Date().toISOString()
-            })
+        else {
+            throw createError(`Término de pago inválido, valores válidos: ${allowedPaymentTerms.join(', ')}`, 400, 'INVALID_PAYMENT_TERMS');
         }
     }
 
@@ -273,14 +255,8 @@ const invoiceByQueryBuilder =(queries) =>
         values.push(`%${invoice_number}%`);
     }
 
-    if(conditions.length===0)
-    {
-        throw Object.assign( new Error('No se recibieron parámetros de búsqueda válidos'),
-        {
-            status: 400,
-            code: 'MISSING_SEARCH_PARAMETERS',
-            timestamp: new Date().toISOString()
-        })
+    if(conditions.length===0) {
+        throw createError('No se recibieron parámetros de búsqueda válidos', 400, 'MISSING_SEARCH_PARAMETERS');
     }
 
     const whereClause = conditions.join(' AND ');

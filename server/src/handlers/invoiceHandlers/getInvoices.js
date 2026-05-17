@@ -31,7 +31,7 @@ const getInvoicesByQuery = async (req, res) => {
     try {
         const { whereClause, values } = invoiceByQueryBuilder(req.query);
         
-        const [rows] = await req.pool.query(`SELECT * FROM invoices WHERE ${whereClause}`, values);
+        const [rows] = await req.pool.query(`SELECT ${validation.invoiceFields} FROM invoices WHERE ${whereClause}`, values);
         return res.status(200).json( rows );
     }
     catch(error) {

@@ -428,6 +428,7 @@ const options = {
                     type: 'object',
                     properties: {
                         id: { type: 'string' },
+                        client_id: { type: 'string' },
                         status: { type: 'string', enum: ['draft', 'confirmed', 'delivered','paid','cancelled']},
                         total: { type: 'number', format: 'double', nullable: true },
                         created_at: { type: 'string', format: 'date-time' },
@@ -591,6 +592,88 @@ const options = {
                     schema: { type: 'integer', enum: [0, 1] },
                     example: 1,
                     description: 'Buscamos por estado del producto [0 = inactivo] [1 = activo]'
+                },
+                // Invoice queries
+                queryIssueDateFrom: {
+                    in: 'query',
+                    name: 'issue_date_from',
+                    schema: { type: 'string', format: 'date' },
+                    example: '2026-01-01',
+                    description: 'Filtra facturas emitidas desde esta fecha (inclusive). Formato ISO 8601: YYYY-MM-DD.'
+                },
+                queryIssueDateTo: {
+                    in: 'query',
+                    name: 'issue_date_to',
+                    schema: { type: 'string', format: 'date' },
+                    example: '2026-12-31',
+                    description: 'Filtra facturas emitidas hasta esta fecha (inclusive). Formato ISO 8601: YYYY-MM-DD.'
+                },
+                queryDueDateFrom: {
+                    in: 'query',
+                    name: 'due_date_from',
+                    schema: { type: 'string', format: 'date' },
+                    example: '2026-01-01',
+                    description: 'Filtra facturas con fecha de vencimiento desde esta fecha (inclusive).'
+                },
+                queryDueDateTo: {
+                    in: 'query',
+                    name: 'due_date_to',
+                    schema: { type: 'string', format: 'date' },
+                    example: '2026-12-31',
+                    description: 'Filtra facturas con fecha de vencimiento hasta esta fecha (inclusive).'
+                },
+                queryTotalFrom: {
+                    in: 'query',
+                    name: 'total_from',
+                    schema: { type: 'number', format: 'double' },
+                    description: 'Filtra facturas con total mayor o igual a este valor.'
+                },
+                queryTotalTo: {
+                    in: 'query',
+                    name: 'total_to',
+                    schema: { type: 'number', format: 'double' },
+                    description: 'Filtra facturas con total menor o igual a este valor.'
+                },
+                queryPaidAtFrom: {
+                    in: 'query',
+                    name: 'paid_at_from',
+                    schema: { type: 'string', format: 'date-time' },
+                    description: 'Filtra facturas pagadas desde esta fecha/hora (inclusive).'
+                },
+                queryPaidAtTo: {
+                    in: 'query',
+                    name: 'paid_at_to',
+                    schema: { type: 'string', format: 'date-time' },
+                    description: 'Filtra facturas pagadas hasta esta fecha/hora (inclusive).'
+                },
+                queryClientId: {
+                    in: 'query',
+                    name: 'client_id',
+                    schema: { type: 'string', format: 'uuid' },
+                    example: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
+                    description: 'UUID del cliente. Filtra facturas pertenecientes a un cliente específico.'
+                },
+                queryInvoiceStatus: {
+                    in: 'query',
+                    name: 'status',
+                    schema: { 
+                        type: 'string', 
+                        enum: ['draft', 'confirmed', 'delivered', 'paid', 'cancelled'] 
+                    },
+                    example: 'draft',
+                    description: 'Estado actual de la factura. draft = borrador, confirmed = confirmada, delivered = entregada, paid = pagada, cancelled = cancelada.'
+                },
+                queryInvoiceNumber: {
+                    in: 'query',
+                    name: 'invoice_number',
+                    schema: { type: 'string' },
+                    description: 'Número de factura. Soporta búsqueda parcial (contiene).'
+                },
+                queryPaymentTerms: {
+                    in: 'query',
+                    name: 'payment_terms',
+                    schema: { type: 'integer', enum: [30, 60, 90, 120] },
+                    description: 'Días de plazo para el pago. 30 = neto 30, 60 = neto 60, etc.'
                 }
             },
             examples: {

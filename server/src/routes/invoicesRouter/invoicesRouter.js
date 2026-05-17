@@ -190,6 +190,7 @@ invoicesRouter.post('/', postInvoice);
  *                 $ref: '#/components/schemas/invoicePublic'
  *             example:
  *               - id: cccccccc-cccc-cccc-cccc-cccccccccccc
+ *                 client_id: aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
  *                 status: draft
  *                 total: null
  *                 created_at: 2026-05-07T01:05:57.000Z
@@ -227,7 +228,7 @@ invoicesRouter.get('/me', getMyInvoices);
  *           application/json:
  *             schema:
  *               oneOf:
- *                 - $ref: '#/components/schemas/privateInvoice'
+ *                 - $ref: '#/components/schemas/invoicePrivate'
  *                 - type: 'object'
  *                   description: Objeto vacío cuando no hay factura activa
  *                   example: {}
@@ -274,7 +275,7 @@ invoicesRouter.get('/me/active', getMyActiveInvoice);
 
 /**
  * @swagger
- * /invoices/me/:invoiceId:
+ * /invoices/me/{invoiceId}:
  *   get:
  *     summary: (👤) Entrega todos los datos de la factura activa del cliente logeado.
  *     description: Entrega todos los datos de la factura activa mas los productos relacionados con la misma.
@@ -295,7 +296,7 @@ invoicesRouter.get('/me/active', getMyActiveInvoice);
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/privateInvoice'
+ *               $ref: '#/components/schemas/invoicePrivate'
  *             example:
  *               id: 7937fef3-4f19-11f1-aac0-507b9d97da6f
  *               client_id: bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb
@@ -552,21 +553,19 @@ invoicesRouter.patch('/:id', updateInvoice);
  *       content:
  *         application/json:
  *           schema:
- *             type: array
- *             items:
- *               type: 'object'
- *               required:
- *                 - payment_terms
- *               properties:
- *                 payment_terms:
- *                   type: string
- *                   enum: [30, 60, 90, 120] 
- *                 notes:
- *                   type: string
+ *             type: object
+ *             required:
+ *               - payment_terms
+ *             properties:
+ *               payment_terms:
+ *                 type: integer
+ *                 enum: [30, 60, 90, 120]
+ *               notes:
+ *                 type: string
  *           examples:
  *               enviamos_lo_necesario:
  *                 summary: ✔ Enviamos solo el dato clave.
- *                 descriptioin: Los terminos de pago (payment_terms) son clave para calcular la fecha de vencimiento (due_date), siendo el único dato obligatorio para la confirmación.
+ *                 description: Los terminos de pago (payment_terms) son clave para calcular la fecha de vencimiento (due_date), siendo el único dato obligatorio para la confirmación.
  *                 value:
  *                   payment_terms: 90
  *               enviamos_notas_también:
@@ -596,7 +595,7 @@ invoicesRouter.patch('/:id', updateInvoice);
  *           application/json:
  *             schema:
  *               type: object
- *               value:
+ *               properties:
  *                 message:
  *                   type: string
  *                 invoice_id:
@@ -665,7 +664,7 @@ invoicesRouter.post('/confirm', confirmInvoice);
 
 /**
  * @swagger
- * /invoices/cancel:
+ * /invoices/{id}/cancel:
  *   post:
  *     summary: (👤) Cancelamos la factura dueña del ID enviado.
  *     description: Al cancelar la factura, liberamos el stock reservado y asentamos fechas antes de archivar el registro de esta factura.
@@ -675,7 +674,7 @@ invoicesRouter.post('/confirm', confirmInvoice);
  *       - bearerAuth: []
  *     parameters:
  *      - in: path
- *        name: invoiceId
+ *        name: id
  *        required: true
  *        schema:
  *          type: string
@@ -748,12 +747,374 @@ invoicesRouter.post('/:id/cancel', cancelInvoice);
 //Admin routes
 invoicesRouter.use(adminOnly);
 
+/**
+ * @swagger
+ * /invoices/all:
+ *   get:
+ *     summary: (🔐) Entrega todos los invoices en base de datos.
+ *     description: Entrega los datos básicos de todos los invoices en base de datos.
+ *     tags:
+ *       - Invoices
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Devuelve un array con todos los invoices en base de datos.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/invoicePublic'
+ *             example:
+ *               - id: cccccccc-cccc-cccc-cccc-cccccccccccc
+ *                 client_id: aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+ *                 status: draft
+ *                 total: null
+ *                 created_at: 2026-05-07T01:05:57.000Z
+ *                 issue_date: null
+ *                 due_date: null
+ *                 delivered_at: null
+ *                 paid_at: null
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/errorMessage'
+ *             example:
+ *               error: Error interno del servidor
+ *               code: INTERNAL_SERVER_ERROR
+ */
+
 invoicesRouter.get('/all', getAllInvoices);
+
+/**
+ * @swagger
+ * /invoices/search:
+ *   get:
+ *     summary: (🔐) Busca invoices por filtros específicos by query.
+ *     description: Entrega los datos básicos del los clientes que coincidan con los filtros de búsqueda enviados por query.
+ *     tags:
+ *       - Invoices
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - $ref: '#/components/parameters/queryIssueDateFrom'
+ *       - $ref: '#/components/parameters/queryIssueDateTo'
+ *       - $ref: '#/components/parameters/queryDueDateFrom'
+ *       - $ref: '#/components/parameters/queryDueDateTo'
+ *       - $ref: '#/components/parameters/queryTotalFrom'
+ *       - $ref: '#/components/parameters/queryTotalTo'
+ *       - $ref: '#/components/parameters/queryPaidAtFrom'
+ *       - $ref: '#/components/parameters/queryPaidAtTo'
+ *       - $ref: '#/components/parameters/queryClientId'
+ *       - $ref: '#/components/parameters/queryInvoiceStatus'
+ *       - $ref: '#/components/parameters/queryInvoiceNumber'
+ *       - $ref: '#/components/parameters/queryPaymentTerms'
+ *     responses:
+ *       200:
+ *         description: Devuelve un array con todos los invoices que cumplan con las condiciones de búsqueda.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/invoicePublic'
+ *             example:
+ *               - id: cccccccc-cccc-cccc-cccc-cccccccccccc
+ *                 client_id: aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
+ *                 status: draft
+ *                 total: null
+ *                 created_at: 2026-05-07T01:05:57.000Z
+ *                 issue_date: null
+ *                 due_date: null
+ *                 delivered_at: null
+ *                 paid_at: null
+ *       400:
+ *         description: Hubo un error con los datos enviados para buscar por query.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/errorMessage'
+ *             examples:
+ *               id_a_buscar_inválido:
+ *                 summary: ⚠ ID Inválido
+ *                 value:
+ *                   error: El formato del ID recibido por query es inválido
+ *                   code: INVALID_ID_FORMAT
+ *               status_inválido:
+ *                 summary: ⚠ Status inválido
+ *                 value:
+ *                   error: STATUS inválido, valores permitidos --- draft, confirmed, delivered, paid, cancelled
+ *                   code: INVALID_STATUS
+ *               término_de_pago_inválido:
+ *                 summary: ⚠ Término de pago inválido
+ *                 value:
+ *                   error: Término de pago inválido, valores válidos -- 30, 60, 90, 120
+ *                   code: INVALID_PAYMENT_TERMS
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/errorMessage'
+ *             example:
+ *               error: Error interno del servidor
+ *               code: INTERNAL_SERVER_ERROR
+ */
+
 invoicesRouter.get('/search', getInvoicesByQuery);
+
+/**
+ * @swagger
+ * /invoices/{id}:
+ *   get:
+ *     summary: (🔐) Entrega todos los datos de la factura dueña del ID.
+ *     description: Entrega todos los datos de la factura dueña del ID que mandamos por parametro.
+ *     tags:
+ *       - Invoices
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *      - in: path
+ *        name: id
+ *        required: true
+ *        schema:
+ *          type: string
+ *          example: cccccccc-cccc-cccc-cccc-cccccccccccc
+ *     responses:
+ *       200:
+ *         description: Devuelve un objeto con la factura activa y todos los productos relacionados en la propiedad "products".
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/invoicePrivate'
+ *             example:
+ *               id: 7937fef3-4f19-11f1-aac0-507b9d97da6f
+ *               client_id: bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb
+ *               status: draft
+ *               invoice_number: null
+ *               issue_date: null
+ *               due_date: null
+ *               payment_terms: null
+ *               total: null
+ *               notes: null
+ *               created_at: 2026-05-13T22:17:05.000Z
+ *               updated_at: 2026-05-13T22:17:05.000Z
+ *               paid_at: null
+ *               delivered_at: null
+ *               products:
+ *                 - product_id: e7b50924-49b0-11f1-acdd-507b9d97da6f
+ *                   product_name: Mouse Inalambrico
+ *                   price_at_addition: 45000
+ *                   quantity: 10
+ *                   stock: 150
+ *                   reserved_stock: 0
+ *                   subtotal: 450000
+ *       404:
+ *         description: No encontramos un invoice con esa ID en base de datos.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/errorMessage'
+ *             example:
+ *               error: Invoice no encontrado
+ *               code: INVOICE_NOT_FOUND
+ *       500:
+ *         description: Error interno del servidor
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/errorMessage'
+ *             example:
+ *               error: Error interno del servidor
+ *               code: INTERNAL_SERVER_ERROR
+ */
+
 invoicesRouter.get('/:id', getInvoiceById);
+
+/**
+ * @swagger
+ * /invoices/{id}/deliver:
+ *   post:
+ *     summary: (🔐) Actualiza el estado del invoice y descuenta stock.
+ *     description: Actualiza a "delivered" (entregado) el estado del invoice y decuenta stock de todos los productos relacionados.
+ *     tags:
+ *       - Invoices
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *      - in: path
+ *        name: id
+ *        required: true
+ *        schema:
+ *          type: string
+ *          example: cccccccc-cccc-cccc-cccc-cccccccccccc
+ *     responses:
+ *       200:
+ *         description: Confirmamos la entrega de los productos, descontamos el stock y recibimos un mensaje confirmado el éxito de la operación.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 invoice_id:
+ *                   type: string
+ *             example:
+ *               message: Invoice entregado
+ *               invoice_id: cccccccc-cccc-cccc-cccc-cccccccccccc
+ *       400:
+ *         description: ID del producto/cantidad faltante o con formato inválido.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/errorMessage'
+ *             examples:
+ *               id_no_recibidos:
+ *                 summary: ✖ ID no recibido
+ *                 value:
+ *                   error: ID no recibido
+ *                   code: ID_REQUIRED
+ *               id_con_formato_inválido:
+ *                 summary: ✖ ID con formato inválido
+ *                 value:
+ *                   error: Formato del ID inválido
+ *                   code: INVALID_ID_FORMAT
+ *       403:
+ *         description: Problema con el estado actual del invoice, debe estar 'confirmado' previamente para poder entregarse.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/errorMessage'
+ *             example:
+ *               error: Invoice no previamente confirmado
+ *               code: ONLY_CONFIRMED_INVOICES_CAN_BE_DELIVERED
+ *       404:
+ *         description: No encontramos un invoice con esa ID en base de datos.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/errorMessage'
+ *             example:
+ *               error: Invoice no encontrado
+ *               code: INVOICE_NOT_FOUND
+ *       500:
+ *         description: Error interno o inconsistencia de datos del servidor.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/errorMessage'
+ *             examples:
+ *               error_con_stock_en_producto_x:
+ *                  summary: ⚠ Error con stock
+ *                  value:
+ *                    error: Error con stock||reserved_stock en producto ID {id del producto}
+ *                    code: DATA_CONSISTENCY_ERROR
+ *               no_se_pudo_actualizar_en_el_paso_final:
+ *                  summary: ✖ Error en el paso final del proceso
+ *                  value:
+ *                    error: No se actualizó el invoice en el paso final
+ *                    code: DATA_CONSISTENCY_ERROR
+ *               error_interno_general:
+ *                  summary: ✖ Error interno inesperado
+ *                  value:
+ *                    error: Error interno del servidor
+ *                    code: INTERNAL_SERVER_ERROR
+ */
+
 invoicesRouter.post('/:id/deliver', deliverInvoice);
 
 //Webhook
+
+/**
+ * @swagger
+ * /invoices/{id}/paid:
+ *   post:
+ *     summary: (🔐) Actualiza el estado del invoice a 'Paid'.
+ *     description: Actualiza a "paid" (pagado) el estado del invoice. Esta ruta debe hablar con el webhook de pago directamente.
+ *     tags:
+ *       - Invoices
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *      - in: path
+ *        name: id
+ *        required: true
+ *        schema:
+ *          type: string
+ *          example: cccccccc-cccc-cccc-cccc-cccccccccccc
+ *     responses:
+ *       200:
+ *         description: Confirmamos el pago de la factura. Recibimos un mensaje confirmando el éxito de la operación.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 invoice_id:
+ *                   type: string
+ *             example:
+ *               message: Invoice actualizado a "paid"
+ *               invoice_id: cccccccc-cccc-cccc-cccc-cccccccccccc
+ *       400:
+ *         description: ID del producto/cantidad faltante o con formato inválido.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/errorMessage'
+ *             examples:
+ *               id_no_recibidos:
+ *                 summary: ✖ ID no recibido
+ *                 value:
+ *                   error: ID no recibido
+ *                   code: ID_REQUIRED
+ *               id_con_formato_inválido:
+ *                 summary: ✖ ID con formato inválido
+ *                 value:
+ *                   error: Formato del ID inválido
+ *                   code: INVALID_ID_FORMAT
+ *       403:
+ *         description: Problema con el estado actual del invoice, debe estar 'confirmado' o 'entregado' previamente para poder aceptar un pago.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/errorMessage'
+ *             example:
+ *               error: Status del invoice inválido para aceptar pago
+ *               code: INVALID_INVOICE_STATUS
+ *       404:
+ *         description: No encontramos un invoice con esa ID en base de datos.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/errorMessage'
+ *             example:
+ *               error: Invoice no encontrado
+ *               code: INVOICE_NOT_FOUND
+ *       500:
+ *         description: Error interno o inconsistencia de datos del servidor.
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/errorMessage'
+ *             examples:
+ *               no_se_pudo_actualizar_en_el_paso_final:
+ *                  summary: ✖ Error en el paso final del proceso
+ *                  value:
+ *                    error: No se actualizó el invoice en el paso final
+ *                    code: DATA_CONSISTENCY_ERROR
+ *               error_interno_general:
+ *                  summary: ✖ Error interno inesperado
+ *                  value:
+ *                    error: Error interno del servidor
+ *                    code: INTERNAL_SERVER_ERROR
+ */
+
 invoicesRouter.post('/:id/paid', payInvoice);
 
 module.exports = invoicesRouter;
