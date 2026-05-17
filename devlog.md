@@ -1,570 +1,147 @@
 # Devlog
 
-## [Products Swagger] 2026-05-11
+## [Invoices Swagger] 2026-05-16
 
-### Completed Swagger documentation for the Products module
+### Documentación Swagger completa para el módulo de Invoices
 
-Fully integrated Swagger/JSDoc documentation for all product-related endpoints. Applied the same modular architecture used in the Clients module but refined the use of reusable components to handle complex search filters and administrative actions.
-
-#### Endpoints documented
-
-**Public (👥):**
-- `GET /products/all` → full listing using `productPublic` schema.
-- `GET /products/search` → dynamic search. Documented all query parameters (`sku`, `name`, `category`, `unit_price`, `stock`, `reserved_stock`, `is_active`) using global references.
-- `GET /products/{id}` → fetch specific product by UUID with 404 error handling.
-
-**Admin (🔐 - Requires `bearerAuth` + admin role):**
-- `POST /products` → creation logic. Included detailed request body examples for successful creation, missing required fields, and duplicate SKU conflicts.
-- `PATCH /products/{id}` → partial updates with examples of allowed/ignored fields.
-- `PATCH /products/{id}/toggle-active` → logic for soft-delete/reactivation.
-
-#### Reusable components and configuration
-
-Updated `swagger.js` to support the new module:
-- **Schemas:** Created `Product`, `productPublic`, `postProduct`, and `updateProduct` components. Used `$ref` to keep the router code clean and the documentation DRY.
-- **Parameters:** Centralized all search filters in `components/parameters`. This allows the `/search` endpoint to remain readable while providing full documentation for 7+ query params.
-- **Global Security:** Integrated `bearerAuth` for all protected routes, ensuring the Swagger UI correctly handles JWT headers.
-
-#### Error handling
-- Standardized error responses using the `errorMessage` schema.
-- Documented specific scenarios: `409 Conflict` (for duplicate SKUs), `400 Bad Request` (invalid UUID format or missing body), and `500 Internal Server Error`.
-
-#### Technical Highlights
-- **DRY Documentation:** Refined the use of `$ref` for both schemas and parameters, making the documentation as modular as the backend code itself.
-- **Improved UX:** Included rich examples for `POST` and `PATCH` requests to clarify which fields are strictly required vs. optional, reducing potential friction for API consumers.
-
-#### Next Steps
-- [ ] Document the `invoices` module (integrating transaction-heavy logic into OpenAPI).
-- [ ] Verify naming consistency between DB models and Swagger schemas.
-- [ ] Prepare final deployment for public `/api-docs`.
-
-## [Clients Swagger] 2026-05-09
-
-### Completé la documentación Swagger del módulo clients
-
-Documenté el resto de los endpoints que faltaban:
-
-**Rutas de cliente autenticado:**
-- `PATCH /me/change-password` → cambio de contraseña con ejemplos de errores
-- `PATCH /me/deactivate` → desactivar cuenta
-- `POST /me/reactivate` → solicitar reactivación por email
-- `PATCH /me/reactivate/{token}` → reactivar cuenta con token
-
-**Rutas de administrador:**
-- `GET /all` → listar todos los clientes
-- `GET /search` → búsqueda con filtros (business_name, email, status, etc.)
-- `PATCH /{id}/toggle` → alternar estado (active/inactive)
-- `PATCH /{id}/toggle-admin` → alternar permisos de admin
-- `GET /{id}` → cliente por ID con sus facturas
-
-**Schemas nuevos:**
-- `clientPublic` → versión reducida para listados
-- `clientPrivate` → con `invoices` anidado
-- `errorMessage` → estructura unificada de errores
-
-**Parámetros reutilizables:**
-- Definí `components/parameters` para los filtros de `/clients/search`
-
-**Manejo de errores:**
-- Documenté todos los códigos: 400, 401, 403, 404, 409, 500
-- Incluí ejemplos específicos para cada caso (body vacío, formato inválido, etc.)
-
-## [Swagger Documentation] 2026-05-02
-
-### Documentación interactiva con OpenAPI
-
-Agregué documentación Swagger a todas las rutas públicas y protegidas del módulo `clients`.
+Integré por completo la documentación de Swagger/JSDoc para todos los endpoints relacionados con facturas (invoices), cerrando así el ciclo de documentación de los tres módulos principales de este ecosistema de servidor B2B. Este módulo presentó la mayor complejidad arquitectónica debido al estricto ciclo de vida del documento (Draft ➔ Confirmed ➔ Delivered / Cancelled) y a las pesadas reglas transaccionales de la base de datos.
 
 #### Endpoints documentados
 
-- `POST /clients` → registro de cliente (con ejemplos de casos felices, errores, body vacío)
-- `GET /clients/me/verify/{token}` → verificación de email
-- `POST /clients/login` → autenticación
-- `GET /clients/me` → perfil del usuario autenticado
-- `PATCH /clients/me` → actualizar datos no críticos
-
-#### Schemas reutilizables
-
-Definí schemas en `components/schemas` para evitar repetir estructuras:
-
-- `Client` → estructura completa del cliente (lo que devuelve la API)
-- `postClient` → campos requeridos para registrar un cliente
-- `updateClient` → campos permitidos para actualización
-
-#### Autenticación en Swagger
-
-Configuré `securitySchemes` con `bearerAuth`. En la UI aparecen ejemplos de token de cliente y admin, con descripción copiable.
-
-#### Por hacer
-
-- Documentar endpoints de `products`
-- Documentar endpoints de `invoices`
-- Unificar criterios de `examples` vs `example`
-  
-## [PROJECT v1.0] - 2026-04-12
-
-### Backend terminado
-
-Después de varias semanas, el backend está completo. Tiene:
-
-- **Clientes**: registro, login, verificación por email, autogestión (perfil, contraseña, desactivación), roles (admin/cliente)
-- **Productos**: CRUD, búsqueda dinámica, soft delete, solo admin puede escribir
-- **Facturas**: ciclo completo (draft → confirm → deliver → paid/cancel), stock reservado y real, transacciones, separación por roles
-
-#### Lo que aprendí en el camino
-
-- JWT no guarda estado, pero podés consultar la DB para validar cosas mutables (status)
-- El orden de las rutas en Express importa (las específicas antes que las dinámicas)
-- Las transacciones no son magia, son `BEGIN`, `COMMIT`, `ROLLBACK`
-- `reserved_stock` es clave en un sistema mayorista
-- Documentar el proceso (devlog) ayuda a ordenar las ideas
-
-#### Próximo proyecto (si lo hay)
-
-- Frontend en React para consumir esta API
-- Paginación real
-- Webhook de MercadoPago
-
-## [Clients Router Final] 2026-04-09
-
-### Separación definitiva de rutas públicas, de cliente autenticado y de admin
-
-Terminé de organizar el enrutador de clients. Quedó todo prolijo, con los middlewares bien puestos y cada endpoint en su lugar.
-
-#### Cómo quedó la estructura
-
-- **Rutas públicas** (sin autenticar):
-  - `POST /` → registro
-  - `GET /me/verify/:token` → verificación de email
-  - `POST /login` → login (devuelve solo el token)
-
-- **Rutas de cliente autenticado** (requieren `authMiddleware`):
-  - `GET /me` → perfil
-  - `PATCH /me` → actualizar datos no sensibles
-  - `PATCH /me/change-password` → cambiar contraseña
-  - `GET /me/invoices` → listar facturas propias
-  - `GET /me/invoices/active` → ver carrito activo
-  - `PATCH /me/deactivate` → desactivar cuenta
-  - `POST /me/reactivate` → pedir reactivación por email
-  - `PATCH /me/reactivate/:token` → reactivar con token
-
-- **Rutas de admin** (requieren `authMiddleware` + `adminOnly`):
-  - `GET /all` → listar todos los clientes
-  - `GET /search` → búsqueda dinámica
-  - `PATCH /:id/toggle` → cambiar estado (active/inactive/confirmed)
-  - `GET /:id` → obtener cliente por ID
-
-#### Manejo de estado y token
-
-- El `status` ya no se guarda en el JWT. Se consulta en cada request desde la DB.
-- El middleware de autenticación valida el token y después busca el estado actual del cliente.
-
-#### Middlewares funcionando
-
-- `authMiddleware`: verifica token, busca el status en DB y arma `req.client`
-- `adminOnly`: verifica `req.client.is_admin` y rechaza con 403 si no lo es
-
-#### Errores corregidos en el camino
-
-- El middleware `adminOnly` no estaba capturando bien los errores y devolvía HTML en vez de JSON. Se encapsuló con try/catch y ahora responde como corresponde.
-- El orden de las rutas estaba haciendo que `/:id` se comiera otras rutas como `/all` o `/search`. Se reordenaron y ahora funciona todo.
-
-#### Próximos pasos
-
-- Pasar por el mismo proceso de seguridad a los routers de products e invoices
-- Probar bien edge cases y errores
-- Desplegar el backend y grabar una demo
-
-## [CLIENT Self-Service] 2026-04-06
-
-### Endpoints para que el cliente maneje su cuenta solo
-
-Terminé el módulo de autogestión de clientes. Ahora pueden ver y actualizar su perfil, cambiar contraseña, ver sus facturas y manejar su estado (activar/desactivar cuenta).
-
-#### Estructura de rutas (cliente autenticado)
-
-| Método | Endpoint | Qué hace |
-|--------|----------|----------|
-| GET | `/me` | Ver mi perfil |
-| PATCH | `/me` | Actualizar mi perfil (phone, address, contact_name, contact_phone) |
-| PATCH | `/me/change-password` | Cambiar contraseña |
-| GET | `/me/invoices` | Ver todas mis facturas |
-| GET | `/me/invoices/active` | Ver mi carrito activo (draft) |
-| PATCH | `/me/deactivate` | Desactivar mi cuenta |
-| POST | `/me/reactivate` | Solicitar reactivación (envía email) |
-| PATCH | `/me/reactivate/:token` | Reactivar cuenta con token |
-
-#### Flujo de desactivación/reactivación
-
-1. El cliente desactiva su cuenta → `status = 'inactive'`, se genera un `verification_token`
-2. Solicita reactivación → se envía un email con un link que contiene el token
-3. Clickea el link → frontend llama al endpoint de reactivación
-4. El token se valida y la cuenta vuelve a `status = 'active'`
-
-#### Estados de la cuenta
-
-| Estado | Qué significa |
-|--------|---------------|
-| `pending` | Registró pero no verificó email |
-| `confirmed` | Verificó email, espera aprobación de admin |
-| `active` | Cuenta habilitada para operar |
-| `inactive` | Desactivada por el cliente, puede reactivarse por email |
-
-#### Login simplificado
-
-- Ya no devuelve datos del cliente, solo el token
-- El frontend usa `/me` para obtener el perfil después de loguear
-- Separa responsabilidades: login solo autentica, `/me` da la info
-
-#### Archivos involucrados
-
-- `src/handlers/clientHandlers/getMyData.js` → getMyProfile, getMyInvoices, getMyActiveInvoice
-- `src/handlers/clientHandlers/updateMyProfile.js` → updateMyProfile
-- `src/handlers/clientHandlers/changeMyPassword.js` → changeMyPassword (antes updatePassword, ahora usa req.client.id)
-- `src/handlers/clientHandlers/deactivateMySelf.js` → desactivar cuenta
-- `src/handlers/clientHandlers/reactivateAccount.js` → verifyMail, sendReactivationMail, reactivateMyAccount
-
-### Cambios en la base de datos
-
-- Modificado `status` ENUM: ahora acepta `'pending'`, `'confirmed'`, `'active'`, `'inactive'`
-- `verification_token` se reutiliza para reactivación
-- `email_verified_at` se setea cuando confirma el email
-
-### Próximos pasos
-
-- [ ] Separar `clientsRouter` en `clientRoutes.js` y `adminRoutes.js`
-- [ ] Proteger rutas de admin con `authMiddleware + adminOnly`
-- [ ] Implementar Nodemailer para envío real de emails
-
-## [INVOICES Deliver & Pay & Cancel] 2026-04-02
-
-### Endpoints para ciclo de vida de invoices
-
-Terminé los tres endpoints que faltaban para completar el ciclo completo del invoice:
-
-#### POST /invoices/:id/deliver
-- Archivo: `src/handlers/invoiceHandlers/deliverInvoice.js`
-- Cambia status de `confirmed` a `delivered`
-- Descuenta `stock` y `reserved_stock` de cada producto
-- Setea `delivered_at = CURRENT_TIMESTAMP`
-- Usa transacción con `CASE` para batch update de productos
-
-#### POST /invoices/:id/paid
-- Archivo: `src/handlers/invoiceHandlers/paidInvoice.js`
-- Cambia status a `paid`
-- Setea `paid_at = CURRENT_TIMESTAMP`
-- Valida que el invoice esté en `confirmed` o `delivered`
-- Sin transacción (solo un UPDATE simple)
-
-#### POST /invoices/:id/cancel
-- Archivo: `src/handlers/invoiceHandlers/cancelInvoice.js`
-- Solo permite cancelar si status es `confirmed`
-- Libera `reserved_stock` (resta la cantidad reservada)
-- Cambia status a `cancelled`
-- Usa transacción para liberar stock atómicamente
-
-### Lógica compartida
-- Todos usan `getInvoiceWithItems` para traer el invoice con sus productos
-- Los que modifican stock usan `CASE WHEN id = ? THEN ?` para batch update
-- Todos tienen `validateId` al inicio
-- Manejo de errores consistente con código y timestamp
-
-### Manejo de errores
-- `400 INVOICE_NOT_CONFIRMED` → intentar entregar algo que no está confirmado
-- `400 CANNOT_CANCEL_AN_UNCONFIRMED_INVOICE` → cancelar algo que no está confirmado
-- `400 INVOICE_NOT_DELIVERED` → pagar algo que no fue entregado (o confirmado)
-- `409 INSUFFICIENT_STOCK` → stock insuficiente al entregar
-- `409 INCONSISTENT_RESERVED_STOCK` → stock reservado inconsistente al cancelar
-- `500 COULDNT_UPDATE_INVOICE` → fallo en el commit final
-
-### Notas
-- `deliver` y `cancel` usan transacción porque modifican múltiples productos
-- `paid` es simple porque solo toca el invoice
-- Todos los placeholders con `?` (SQL injection safe)
-- `connection.release()` en `finally` libera la conexión al pool
-
-### Estado actual del módulo invoices
-
-| Endpoint | Estado |
-|----------|--------|
-| POST `/invoices` | ✅ |
-| GET `/invoices/all` | ✅ |
-| GET `/invoices/search` | ✅ |
-| GET `/invoices/:id` | ✅ |
-| PATCH `/invoices/:id` | ✅ |
-| POST `/invoices/:id/confirm` | ✅ |
-| POST `/invoices/:id/deliver` | ✅ |
-| POST `/invoices/:id/paid` | ✅ |
-| POST `/invoices/:id/cancel` | ✅ |
-
-**Módulo de invoices completado.** Ahora toca JWT y middlewares de autenticación.
-
-## [INVOICES Confirm] 2026-04-01
-
-### Endpoint para confirmar invoice (draft → confirmed)
-
-- Archivo: `src/handlers/invoiceHandlers/confirmInvoice.js`
-- Endpoint: `POST /invoices/:id/confirm`
-- Body: `{ payment_terms, notes }`
-
-### Lógica implementada
-
-1. **Validaciones iniciales**
-   - UUID válido en `:id`
-   - `payment_terms` permitido (30, 60, 90, 120)
-
-2. **Transacción atómica**
-   - `BEGIN TRANSACTION` antes de cualquier modificación
-   - `COMMIT` solo si todo el proceso es exitoso
-   - `ROLLBACK` ante cualquier error
-
-3. **Reserva de stock**
-   - Por cada item en la factura:
-     - Calcula `newReservedStock = reserved_stock + quantity`
-     - Valida que no supere el stock físico disponible
-     - Construye `CASE WHEN id = ? THEN ?` para batch update
-   - Una sola query actualiza `reserved_stock` de todos los productos afectados
-
-4. **Generación de número de factura**
-   - Formato: `INV-YYYYMMDD-RRRR` (ej: `INV-20260401-0470`)
-   - Fecha actual + número aleatorio de 4 dígitos
-   - Sin query extra a la BD
-
-5. **Actualización del invoice**
-   - `status` → `confirmed`
-   - `invoice_number` → generado
-   - `issue_date` → `CURDATE()` (fecha de confirmación)
-   - `due_date` → `DATE_ADD(CURDATE(), INTERVAL payment_terms DAY)`
-   - `payment_terms` → valor recibido
-   - `total` → suma de subtotales de todos los items
-   - `notes` → opcional
-
-6. **Manejo de errores**
-   - `404 INVOICE_NOT_FOUND` → invoice no existe
-   - `409 INSUFFICIENT_STOCK` → stock insuficiente en algún producto
-   - `500 COULDNT_UPDATE_INVOICE` → fallo en el commit final
-
-### Seguridad y buenas prácticas
-- Todos los placeholders con `?` (SQL injection safe)
-- `connection.beginTransaction()` + `commit()` + `rollback()` garantizan atomicidad
-- `connection.release()` en `finally` libera la conexión al pool
-- `affectedRows` verificado después del último `UPDATE`
-
-### Próximos pasos
-- [ ] `POST /invoices/:id/deliver` → descontar stock físico
-- [ ] `POST /invoices/:id/paid` → registrar fecha de pago
-- [ ] `POST /invoices/:id/cancel` → liberar stock reservado
-
-## [INVOICES Module] 2026-03-31
-
-### CRUD completo para invoices
-
-- Archivos en `src/handlers/invoiceHandlers/`:
-  - `postInvoice.js` → creación de invoice en draft con primer item
-  - `getInvoices.js` → `getAllInvoices`, `getInvoiceById`, `getInvoicesByQuery`
-  - `updateInvoice.js` → `updateInvoice` (batch upsert + delete on quantity 0)
-
-- Helpers en `src/utils/queryBuilder.js`:
-  - `invoiceByQueryBuilder` → construcción dinámica de WHERE clause con rangos y filtros exactos
-
-### Endpoints implementados
-
-| Método | Endpoint | Descripción |
-|--------|----------|-------------|
-| POST | `/invoices` | Crear invoice en draft con primer item |
-| GET | `/invoices/all` | Listar todos los invoices |
-| GET | `/invoices/search?client_id=&status=&total_min=&total_max=&issue_date_from=&issue_date_to=` | Búsqueda con filtros exactos y rangos |
-| GET | `/invoices/:id` | Obtener invoice por ID con sus items |
-| PATCH | `/invoices/:id` | Batch update: insert/update items (quantity > 0), delete items (quantity = 0) |
-
-### Filtros soportados en search
-
-**Exactos:** `client_id`, `status`, `payment_terms`, `invoice_number`
-
-**Rangos numéricos:** `total_min`, `total_max`
-
-**Rangos de fechas:** `issue_date_from`, `issue_date_to`, `due_date_from`, `due_date_to`, `paid_at_from`, `paid_at_to`
-
-### Manejo de errores
-- `400 INVALID_ID_FORMAT` → UUID inválido
-- `400 MISSING_SEARCH_PARAMETERS` → búsqueda sin filtros
-- `400 INVALID_STATUS` → status no permitido
-- `400 INVALID_PAYMENT_TERMS` → payment_terms no permitido
-- `404 INVOICE_NOT_FOUND` → invoice no existe
-
-### Notas
-- Carrito = invoice en estado `draft`
-- Un cliente puede tener un solo `draft` a la vez
-- Cantidad 0 en update → elimina el item del carrito
-- Búsqueda con rangos usa `BETWEEN` (si vienen ambos límites) o `>=` / `<=` (si viene solo uno)
-
-### Próximos pasos (transacciones)
-- [ ] `POST /invoices/:id/confirm` → reservar stock, generar número/fechas
-- [ ] `POST /invoices/:id/deliver` → descontar stock real
-- [ ] `POST /invoices/:id/paid` → marcar como pagado
-- [ ] `POST /invoices/:id/cancel` → liberar stock reservado
-
-## [INVOICES Post] 2026-03-27
-
-### RUTA Post para invoices
-
-- Archivos: `src/handlers/invoiceHandlers/postInvoice`
-  - Necesitamos el id del cliente y el id del producto para crear las primeras relacionales
-  - Cliente>Invoice (one-to-many) y crear la primera entrada de la tabla relacional Invoice>Products (invoice_items)
-
-### Planificación para rutas de modicicación de invoices
-
-- [PATCH] /:id          → Modificar el invoice existente: Quitar/agregar/modificar items. 
-- [POST]  /:id/confirm  → Confirmar el invoice. Crear invoice_id, due_date, agregar reserved_stock a cada producto involucrado.
-- [DELETE]  /:id        → Cuando pasa de draft a cancelled, al no haber ningún cambio en DDBB simplemente se borra.
-- [POST]  /:id/deliver  → Cuando es retirado de depósito. Descontar stock real de cada producto, cambiar estado del invoice.
-- [POST]  /:id/cancel   → Después de confirmado, al cancelar hay que descontar el reserved_stock de los productos y archivar.
-- [PATCH] /:id/toggle-invoice → SOFT Delete
-
-## [PRODUCTS CRUD] 2026-03-25
-
-### CRUD completo para products
-
-- Archivos: `src/handlers/productHandlers`
-  - `postProduct.js` → creación de productos
-  - `getProducts.js` → `getAllProducts`, `getProductById`, `getProductsByQuery`
-  - `updateProduct.js` → `updateProduct`, `toggleProduct`
-
-- Archivo: `src/utils/queryBuilder.js`
-  - `productQueryBuilder` → arma columnas y valores para POST
-  - `searchProductByQuery` → arma conditions y values para búsqueda dinámica
-  - `updateProductQuery` → arma conditions y values para actualizaciones
-
-- Endpoints:
-  - `POST /products`
-  - `GET /products/all`
-  - `GET /products/search?sku=&name=&category=&is_active=`
-  - `GET /products/:id`
-  - `PATCH /products/:id`
-  - `PATCH /products/:id/toggle-active`
-
-- Campos permitidos:
-  - Creación: `sku`, `name`, `description`, `category`, `unit_price`, `stock`, `reserved_stock`, `is_active`
-  - Actualización: `name`, `description`, `unit_price`, `stock`, `reserved_stock`
-  - Búsqueda: `sku` (exacta), `name` (parcial), `category` (parcial), `is_active` (exacta)
-
-- Manejo de errores:
-  - `400 MISSING_KEY_INFORMATION` → faltan datos obligatorios
-  - `400 INVALID_ID_FORMAT` → UUID inválido
-  - `400 MISSING_SEARCHING_PARAMETERS` → búsqueda sin filtros
-  - `404 PRODUCT_NOT_FOUND` → producto no existe
-  - `409` → sku duplicado
-
-### Notas
-- `sku` es único en la tabla
-- Soft delete mediante `is_active`
-- Todas las queries usan placeholders (SQL injection safe)
-- Búsqueda con `LIKE` para `name` y `category`
-
-## [TOGGLE Client] 2026-03-24
-
-### Activar/desactivar cliente en DB
-
-- Archivo: `src/handlers/clientHandlers/updateClients.js`
-- Endpoint: `PATCH /clients/:id/toggle-active`
-- Soft delete / reactivación de clientes
-- Motivo: borrar físicamente eliminaría facturas, pagos e historial asociado
-- Implementación: `UPDATE clients SET is_active = NOT is_active WHERE id = ?`
-- Retorna mensaje de éxito
-
-## [UPDATE Client] 2026-03-24
-
-### Ruta para actualizar datos del cliente
-
-- Archivo: `src/handlers/clientHandlers/updateClients.js`
-- Endpoints:
-  - [PATCH] /:id
-  - [PATCH] /:id/change-password
-- Para actualizar datos generales del cliente tenemos una lista de "fields autorizados".
-- Checkeamos que esté intentando de cambiar algo autorizado y lo sumamos al query
-- En caso de ser la contraseña, tenemos una ruta específica para eso:
-  - Validamos el formato de la nueva contraseña
-  - Comparamos con la anterior para evitar reemplazar con lo mismo
-  - Verificamos que la contraseña anterior sea correcta
-  - Hasheamos la contraseña nueva (bcrypt.hash)
-  - Enviamos el UPDATE SET para actualizar
-
-## [VERIFY Client] 2026-03-24
-
-### Ruta para dar de alta cliente usando token de seguridad
-
-- Archivo: `src/handlers/clientHandlers/verifyClient.js`
-- Endpoint: `GET /clients/verify/:verification_token`
-  - Validación de formato del token (hexadecimal de 64 caracteres)
-  - Búsqueda por token y actualización en una sola query usando `affectedRows`
-  - Actualizaciones:
-    - `verification_token = NULL`
-    - `verified_at = NOW()`
-    - `is_active = true`
-
-[Manejo de errores]
-- `400 INVALID_TOKEN_FORMAT` → token no cumple el formato esperado
-- `400 INVALID_OR_ALREADY_VERIFIED` → token no existe o cuenta ya activada
-
-[Optimización]
-- Uso de `affectedRows` para evitar un `SELECT` previo
-
-### Búsqueda de clientes por query actualizado
-
-- Podemos buscar por varios query a la vez
-- Implementé una forma más dinámica para concatenar clausulas WHERE y sus valores
-
-## [POST Client] 2026-03-23
-
-### Ruta para creación de clientes agregada
-
-- Archivo: `src/handlers/clientHandlers/postClient.js`
-- Terminé el endpoint para creación de `clientes`:
-  - Verificamos que nos llegó la información obligatoria (name, password, email...)
-  - Validamos formato de email y contraseña recibidos (RegExp)
-  - Hasheamos la contraseña antes de seguir con el proceso
-  - Preparamos un query dependiendo la información que nos llegó por body
-  - Insertamos el nuevo registro, traemos el nuevo registro de DDBB sacandole contraseña y token de verificación
-  - Devolvemos el nuevo registro.
-
-### Servicio de validaciones creado
-
-- Archivo: `src/services/validations.js`
-- Contiene funciones reutilizables para validar:
-  - UUID
-  - Email
-  - Password
-- Separación de responsabilidades: los handlers manejan la lógica de request/response, las validaciones se extraen a servicios para mantener el código limpio y testeable.
-
-### Siguientes metas (orden de ejecución)
-1. [ ] PATCH `/clients/verify` → verificar token y actualizar is_active: true
-2. [ ] GET `/clients` → Traer todos los registros de clientes
-3. [ ] GET `/clients/:id` → Traer clientes usando ID o 
-4. [ ] POST `/clients/login` → Comparar contraseña, actualizar last_login, devolver datos del cliente y a futuro manejar JWT.
+**Cliente (👤 - Requiere `bearerAuth` + estado de cliente activo):**
+- `POST /invoices` → Inicialización de facturas en estado "Draft".
+- `GET /invoices/me` → Recuperación del historial de facturación del cliente autenticado.
+- `GET /invoices/me/active` → Obtención del borrador activo con sus productos anidados.
+- `GET /invoices/me/{invoiceId}` → Búsqueda protegida por validación de propiedad del recurso (`403 Forbidden`).
+- `PATCH /invoices/{id}` → Mutaciones de ítems y cantidades restringidas estrictamente al estado "Draft".
+- `POST /invoices/confirm` → El endpoint de cierre: transiciona el estado, calcula fechas de vencimiento y ejecuta las transacciones de reserva de stock.
+- `POST /invoices/{id}/cancel` → Lógica de rollback para liberar `reserved_stock` y archivar documentos cancelados.
+
+**Admin (🔐 - Requiere `bearerAuth` + rol de administrador):**
+- `GET /invoices/all` → Catálogo administrativo general de todas las facturas del ecosistema.
+- `GET /invoices/search` → Búsqueda filtrada multi-parámetro (`issue_date`, `due_date`, `total`, `status`, etc.).
+- `GET /invoices/{id}` → Desglose administrativo de cualquier factura por ID.
+- `POST /invoices/{id}/deliver` → Ejecución de la entrega del pedido y reducción real de los niveles de inventario.
+
+**Webhooks (👥):**
+- `POST /invoices/:id/paid` → Handler para la confirmación de eventos del procesador de pagos.
+
+#### Componentes reutilizables y refactorización estructural
+
+- **Esquemas:** Desarrollé capas de anidación para productos, separando `invoicePublic` (metadatos planos para listas) de `invoicePrivate` (arrays de objetos anidados con desglose de productos) para mantener los modelos de respuesta estrictamente predecibles.
+- **Fail Fast y Consistencia de UI:** Replicando la arquitectura de validación estricta del backend, documenté explícitamente todos los objetos de error de casos de borde (`400`, `403`, `404`, `409`, `500`) con códigos de aplicación precisos (ej. `INSUFFICIENT_STOCK`, `DATA_CONSISTENCY_ERROR`). Esto garantiza que el frontend reciba bloques descriptivos en lugar de sets vacíos cuando rompe un parámetro.
+- **Normalización del tipo Payment Terms:** Apliqué un paso crítico de normalización. En `searchByQuery`, `payment_terms` se esperaba como un enum `integer` (`[30, 60, 90, 120]`), pero en los payloads de los bodies se venía definiendo laxamente como string en los primeros borradores. Alineé todo a enteros estrictos tanto en esquemas como en los ejemplos del JSON, eliminando fricciones en el parser de la UI de Swagger.
+
+#### Siguientes metas y estrategia de verificación
+1. [ ] **Ciclo Completo de Camino Feliz:** Probar el flujo documental completo (Draft ➔ Agregar Ítems ➔ Confirmar ➔ Entregar ➔ Callback de Pago) usando Swagger UI directamente como cliente HTTP mediante el bloque de autorización por token.
+2. [ ] **Concurrencia y Condiciones de Carrera:** Testear los límites de `POST /confirm` bajo simulación de agotamiento de inventario multi-cliente para asegurar que las restricciones transaccionales de la base de datos bloqueen reservas duplicadas (manejo de `409`).
+3. [ ] **Rotura de Máquina de Estados:** Intentar transiciones de estado ilegales (ej. ejecutar `/paid` en un documento `Draft` o mandar un `PATCH` a un archivo `Confirmed`) para verificar que la capa de validación bloquee estados prohibidos.
+
+## [Products Swagger] 2026-05-11
+
+### Documentación Swagger completa para el módulo de Products
+
+Integré por completo la documentación de Swagger/JSDoc para todos los endpoints relacionados con productos. Apliqué la misma arquitectura modular utilizada en el módulo de Clientes, pero refiné el uso de componentes reutilizables para manejar filtros de búsqueda complejos y acciones administrativas.
+
+#### Endpoints documentados
+
+**Públicos (👥):**
+- `GET /products/all` → Listado completo utilizando el esquema `productPublic`.
+- `GET /products/search` → Búsqueda dinámica. Documenté todos los parámetros de query (`sku`, `name`, `category`, `unit_price`, `stock`, `reserved_stock`, `is_active`) utilizando referencias globales.
+- `GET /products/{id}` → Obtención de un producto específico por UUID con manejo de errores 404.
+
+**Admin (🔐 - Requiere `bearerAuth` + rol de administrador):**
+- `POST /products` → Lógica de creación. Incluí ejemplos detallados del request body para creación exitosa, campos obligatorios faltantes y conflictos por SKU duplicado.
+- `PATCH /products/{id}` → Actualizaciones parciales con ejemplos de campos permitidos e ignorados.
+- `PATCH /products/{id}/toggle-active` → Lógica para borrado lógico (soft-delete) y reactivación.
+
+#### Componentes reutilizables y configuración
+
+Actualicé `swagger.js` para dar soporte al nuevo módulo:
+- **Esquemas:** Creé los componentes `Product`, `productPublic`, `postProduct` y `updateProduct`. Usé `$ref` para mantener el código del router limpio y la documentación DRY (sin repetir código).
+- **Parámetros:** Centralicé todos los filtros de búsqueda en `components/parameters`. Esto permite que el endpoint `/search` los reutilice limpiamente en una sola línea por parámetro.
+- **Respuestas de Error:** Estandaricé las respuestas para `400 Bad Request`, `401 Unauthorized`, `403 Forbidden`, `404 Not Found` y `409 Conflict` usando el esquema global de `errorMessage`.
+
+#### Notas y Aprendizajes
+- El enfoque de "Fail Fast" documentado ayuda a los desarrolladores frontend a entender exactamente por qué rebota una petición sin tener que adivinar los logs del servidor.
+- Mantener los nombres de los parámetros en formato camelCase o snake_case consistente con la base de datos es vital. Me aseguré de que todos los filtros de query coincidan al 100% con los nombres de las columnas de MySQL.
+
+## [Clients Swagger] 2026-04-28
+
+### Documentación Swagger completa para el módulo de Clients
+
+Terminé la integración de Swagger (OpenAPI 3.0) para el módulo de Clientes. Toda la documentación está escrita usando comentarios JSDoc directamente arriba de las rutas de Express, lo que mantiene la documentación cerca de la implementación real del código.
+
+#### Endpoints documentados
+- `POST /clients` → Registro público de clientes (estado inicial: 'pending').
+- `POST /clients/login` → Autenticación, generación de JWT y actualización de la columna `last_login`.
+- `GET /clients/verify` → Endpoint de verificación de correo electrónico usando tokens criptográficos.
+- `GET /clients/me` → Perfil protegido para que los clientes recuperen sus propios datos.
+- `PATCH /clients/me/update-profile` → Actualizaciones parciales del perfil (datos de contacto, dirección).
+- `PATCH /clients/me/change-password` → Validación de contraseña actual y hash de la nueva contraseña con bcrypt.
+- `POST /clients/me/deactivate` → Auto-desactivación (borrado lógico, setea `is_active = false`).
+
+#### Rutas de Administrador (🔐)
+- `GET /clients` → Listado de clientes con filtros avanzados por query.
+- `PATCH /clients/:id/toggle-active` → Control administrativo para activar/suspender cuentas.
+- `PATCH /clients/:id/toggle-admin` → Promoción/democión de roles de administrador.
+
+#### Decisiones de Diseño y Solución de Problemas
+- **Seguridad Global:** Configuré `bearerAuth` en la raíz de Swagger. Las rutas protegidas ahora muestran explícitamente el icono del candado en la UI.
+- **Esquemas Reutilizables:** Extraje las estructuras comunes a `src/utils/swagger.js` bajo `components/schemas` (ej. `postClient`, `clientResponse`, `errorMessage`). Esto redujo las líneas de JSDoc en el router a más de la mitad.
+- **Formatos de ID:** Forcé que todos los parámetros de ID en el path utilicen `format: uuid` en la especificación de Swagger para que la interfaz valide el formato antes de enviar la request.
+
+## [Products Module] 2026-04-12
+
+### Base de datos e implementación del CRUD de Productos
+
+Estructuré e implementé la tabla de productos y sus respectivos handlers de Express. El módulo de productos maneja el catálogo de inventario que consumirá el sistema de facturación.
+
+#### Cambios en la base de datos
+Creé la tabla `products` con la siguiente estructura:
+- `id` CHAR(36) [UUID, Clave Primaria]
+- `sku` VARCHAR(50) [Único, No Nulo] -> Formato de negocio estricto (ej. SKU-XXX)
+- `name` VARCHAR(255) [No Nulo]
+- `description` TEXT
+- `category` VARCHAR(100)
+- `unit_price` DECIMAL(12, 2) [No Nulo] -> Manejo preciso de dinero, evitando flotantes de JS
+- `stock` INT [Por defecto: 0] -> Inventario físico real en depósito
+- `reserved_stock` INT [Por defecto: 0] -> Stock comprometido en facturas confirmadas pero no entregadas
+- `is_active` BOOLEAN [Por defecto: true] -> Para borrado lógico
+- `created_at` / `updated_at` [Timestamps automáticos]
+
+#### Endpoints implementados
+1. `GET /products/all` -> Catálogo completo de productos activos (básico para listas del front).
+2. `GET /products/search` -> Query builder dinámico para buscar por cualquier columna (SKU, nombre, precio, etc.).
+3. `GET /products/:id` -> Detalle completo de un producto específico.
+4. `POST /products` (Admin) -> Creación de producto con validación estricta de SKU duplicado.
+5. `PATCH /products/:id` (Admin) -> Actualización parcial. Si mandan campos basura (como datos del perfil del desarrollador), el backend los ignora y procesa solo las columnas válidas.
+6. `PATCH /products/:id/toggle-active` (Admin) -> Soft-delete para discontinuar productos sin romper el historial de facturas viejas.
+
+#### Decisiones Técnicas
+- **Manejo de Stock:** Dividir el stock en `stock` físico y `reserved_stock` es clave para el módulo de facturas que se viene. Permite asegurar mercadería al cliente cuando confirma la compra sin descontarla físicamente hasta que el camión sale del depósito.
+- **Decimales Puros:** En las queries utilizo strings o tipos numéricos limpios para mapear el `DECIMAL` de MySQL. El redondeo y cálculo matemático se protege a nivel query y handlers.
 
 ## [Clients Module] 2026-03-23
 
 ### Cambios en la base de datos
-- Saqué la tabla `users`, creé `clients` en su lugar pensando en:
-  - Simular un negocio real de mayoreo
-  - Agregar verificación por correo electrónico
+- Saqué la tabla `users` y creé `clients` en su lugar pensando en:
+  - Simular un negocio real de venta mayorista (B2B).
+  - Agregar verificación de cuenta por correo electrónico.
   - Darle a futuro un dashboard para revisar sus facturas y preferencias, o incluso pagar desde la app.
 
 - Borré todas las tablas y arranqué de cero. Decisión consciente para evitar deuda técnica temprana y construir con una arquitectura más planeada.
 - Estoy priorizando un enfoque más profesional/real de la app: voy a ir creando un CRUD a la vez, integrando las tablas de a poco, y chequeando que todo avance de manera armoniosa.
 
 ### Siguientes metas (orden de ejecución)
-1. [ ] POST `/clients/register` → bcrypt + token de verificación
-2. [ ] GET `/clients/verify` → activar cuenta
-3. [ ] POST `/clients/login` → autenticación
-4. [ ] GET `/clients` (con filtros y paginación)
-5. [ ] PATCH `/clients/:id`
-6. [ ] Modelo de `products`
+1. [ ] POST `/clients/register` → bcrypt + token de verificación criptográfico.
+2. [ ] GET `/clients/verify` → activación de cuenta mediante token.
+3. [ ] POST `/clients/login` → autenticación y generación de sesión segura.
+4. [ ] GET `/clients` (con filtros dinámicos y paginación).
+5. [ ] PATCH `/clients/:id` (actualización de perfiles).
+6. [ ] Diseño y modelo de la tabla de `products`.
 
 ### Notas
-- Usando queries puras de MySQL, sin ORM.
-- Una vez termine CLIENTS por completo (edge cases, errores, regexp) avanzo a la siguiente tabla.
-- Todo el código se va a ir subiendo por partes, con commits claros y documentación paralela.
-
-![Esquema actual de la tabla clients](./public/image.png)
-*Tabla `clients` - estructura actual (2026-03-23)*
+- Usando queries puras de MySQL mediante pools de conexiones, sin ningún ORM.
+- Una vez termine CLIENTS por completo (edge cases, manejo estricto de errores, expresiones regulares) avanzo recién a la siguiente tabla.
+- Todo el código se va a estructurar bajo la filosofía de "Fail Fast" para mantener consistencia absoluta en las respuestas del servidor.

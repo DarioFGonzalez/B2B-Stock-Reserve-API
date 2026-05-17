@@ -1,5 +1,58 @@
 # Changelog
 
+## [Invoices Module] - 2026-05-16
+
+### Swagger/OpenAPI Documentation Completed
+
+Completed Swagger documentation for the entire invoices module, finalizing the comprehensive OpenAPI contract for the B2B server ecosystem. This iteration standardizes full document workflows, lifecycle transitions, and data safety logic.
+
+#### Endpoints documented
+
+**Authenticated client (requires `bearerAuth` + active client status):**
+- `POST /invoices` → create a new invoice in 'Draft' status with the first product (includes strict formats, extra property filtration, and boundary data handling).
+- `GET /invoices/me` → list all public invoice records belonging to the authenticated client.
+- `GET /invoices/me/active` → fetch full breakdown (including relational `products` array) of the client's current active draft invoice (returns an empty object `{}` if none exists).
+- `GET /invoices/me/{invoiceId}` → fetch strict relational detail for a specific invoice, guarded by client-ownership validation (`403 Forbidden`).
+- `PATCH /invoices/{id}` → update quantities or batch-inject product items inside a draft invoice (includes empty body and invalid structure validation examples).
+- `POST /invoices/confirm` → transition active invoice from 'Draft' to 'Confirmed', lock subtotals, calculate deadlines (`due_date`), and reserve stock inventory.
+- `POST /invoices/{id}/cancel` → rollback a confirmed invoice, free up `reserved_stock` back to real availability, and archive metadata before storage.
+
+**Admin (requires `bearerAuth` + admin role):**
+- `GET /invoices/all` → full administrative catalog of all ecosystem invoices.
+- `GET /invoices/search` → high-performance multi-range filtering by query parameters (dates, range-based amounts, whitelisted enumerations).
+- `GET /invoices/{id}` → targeted retrieval of any invoice record with item arrays via ID.
+- `POST /invoices/{id}/deliver` → finalize product fulfillment, drop `reserved_stock` alongside real stock levels, and set execution timestamps.
+
+**Webhooks & Callbacks (guarded infrastructure):**
+- `POST /invoices/{id}/paid` → transition state to 'Paid' upon payment processor event settlement.
+
+#### Reusable schemas and components
+
+Defined in `components/schemas`:
+- `invoicePublic` → standard non-relational invoice structure (fields like `total` optimized for type-safe decimal representations).
+- `invoicePrivate` → full extended invoice structure embedding a nested `products` array with item breakdown.
+- `errorMessage` → unified error object formatting (`error`, `code`).
+
+Data optimization components:
+- Standardized query-level filters for `searchByQuery` inside `components/parameters`.
+- Refactored `payment_terms` schema types to strictly handle `type: integer` (`enum: [30, 60, 90, 120]`) across endpoints, eradicating validation friction and structural ambiguity between query ranges and payload bodies.
+
+#### Error responses documented
+
+| Code | Cases documented |
+|------|------------------|
+| 400 | Missing IDs, invalid UUID formats, invalid quantity metrics, mismatched array-object payloads, missing or illegal payment parameters, out-of-order lifecycle execution rules. |
+| 403 | Attempting to fetch non-owned documents (`FORBIDDEN`), trying to change fields outside 'Draft' states. |
+| 404 | Document non-existent (`INVOICE_NOT_FOUND`). |
+| 409 | Multiple active drafts conflict (`DRAFT_ALREADY_EXISTS`), inventory limits exceeded (`INSUFFICIENT_STOCK`), internal reservation data drift (`INCONSISTENT_RESERVED_STOCK`). |
+| 500 | Database transaction crashes, middleware pipeline failures, structural system failures (`DATA_CONSISTENCY_ERROR`). |
+
+#### Technical Highlights
+- **Fail Fast Documentation:** Extensively detailed validation contracts mirroring the server-side architecture to enforce explicit rejections (`400 Bad Request`) on structural drift, protecting the client-side against silently swallowed empty sets (`[]`).
+- **Data Normalization Integration:** Aligned schemas with server database driver behavior, using type-safe definitions for amounts and numbers.
+- **Strict Path Isolation:** Standardized Swagger path keys against Express native bindings (e.g., swapping out `:invoiceId` token definitions for strict OpenAPI compliance blocks `{invoiceId}`).
+- **Visual Token Mapping:** Maintained strict consistency using standard role visual cues: (👤) client-level routing, (👥) shared routing, and (🔐) admin-only scopes.
+
 ## [Products Module] - 2026-05-11
 
 ### Swagger/OpenAPI Documentation Completed
