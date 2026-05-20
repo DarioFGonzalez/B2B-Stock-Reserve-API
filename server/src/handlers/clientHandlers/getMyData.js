@@ -1,18 +1,13 @@
+const createError = require("../../utils/errorBuilder");
 const validation = require("../../utils/validations");
 
 const getMyProfile = async (req, res) => {
     const { id } = req.client;
-    validation.validateId(id);
 
     try {
         const [userInfo] = await req.pool.query(`SELECT ${validation.selectedFields} FROM clients WHERE id = ?`, [id]);
         if(userInfo.length === 0) {
-            throw Object.assign( new Error('Cliente no encontrado'),
-            {
-                status: 404,
-                code: 'CLIENT_NOT_FOUND',
-                timestamp: new Date().toISOString()
-            })
+            throw createError('El cliente autenticado ya no existe en el sistema', 500, 'DATA_CONSISTENCY_ERROR');
         }
 
         return res.status(200).json(userInfo[0]);

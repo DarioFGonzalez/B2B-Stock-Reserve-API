@@ -22,6 +22,7 @@ invoicesRouter.use(activeClientOnly);
  * /invoices:
  *   post:
  *     summary: (👤) Crear un nuevo registro de factura.
+ *     operationId: postInvoice
  *     description: Crea una nueva factura en estado "Draft" a nombre del cliente que logeado. Recibe por body el id del primer producto y la cantidad del mismo a agregar. 
  *     tags:
  *       - Invoices
@@ -174,6 +175,7 @@ invoicesRouter.post('/', postInvoice);
  * /invoices/me:
  *   get:
  *     summary: (👤) Entrega las facturas del usuario logeado.
+ *     operationId: getMyInvoices
  *     description: Entrega un array con las facturas del usuario logeado.
  *     tags:
  *       - Invoices
@@ -374,7 +376,7 @@ invoicesRouter.get('/me/:invoiceId', getThisInvoice);
  *     summary: (👤) Agregamos productos a la factura activa.
  *     description: Enviamos por body los datos a cambiar, usamos el id del cliente logeado como punto de referencia.
  *     tags:
- *       - Clients
+ *       - Invoices
  *     security:
  *       - bearerAuth: []
  *     parameters:

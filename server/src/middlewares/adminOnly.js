@@ -1,12 +1,9 @@
+const createError = require("../utils/errorBuilder");
+
 const adminOnly = (req, res, next) => {
     try {
         if(!req.client?.is_admin) {
-            throw Object.assign( new Error('No autorizado'),
-            {
-                status: 403,
-                code: 'UNAUTHORIZED',
-                timestamp: new Date().toISOString()
-            })
+            throw createError('Solo administradores', 403, 'UNAUTHORIZED');
         }
 
         next();
@@ -19,19 +16,15 @@ const adminOnly = (req, res, next) => {
             return res.status(401).json({ error: 'Token expirado' });
         }
 
-        return res.status(401).json({ error: 'No autorizado' });
+        return res.status(error.status||401).json({ error: error.message||'No autorizado' });
     }
 }
 
 const activeClientOnly = (req, res, next) => {
     try {
+        console.log(req.client);
         if(req.client?.status!=='active') {
-            throw Object.assign( new Error('No autorizado'),
-            {
-                status: 403,
-                code: 'UNAUTHORIZED',
-                timestamp: new Date().toISOString()
-            })
+            throw createError('Solo clientes activos.', 403, 'UNAUTHORIZED');
         }
 
         next();
@@ -44,7 +37,7 @@ const activeClientOnly = (req, res, next) => {
             return res.status(401).json({ error: 'Token expirado' });
         }
 
-        return res.status(401).json({ error: 'No autorizado' });
+        return res.status(error.status||401).json({ error: error.message||'No autorizado' });
     }
 }
 

@@ -61,7 +61,7 @@ const options = {
                             type: 'string',
                             format: 'password',
                             minLength: 8,
-                            description: 'Contraseña de acceso al sistema. Debe ser almacenada mediante hashing y cumplir con políticas de seguridad.'
+                            description: 'Contraseña de acceso al sistema. Se almacena mediante hashing y debe cumplir políticas de seguridad.'
                         },
                         phone: {
                             type: 'string',

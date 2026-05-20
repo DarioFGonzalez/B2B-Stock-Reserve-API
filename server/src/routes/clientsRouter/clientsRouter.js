@@ -16,7 +16,24 @@ const getMyProfile = require('../../handlers/clientHandlers/getMyData');
  * /clients:
  *   post:
  *     summary: (👥) Crear un nuevo registro de cliente.
- *     description: Crea un nuevo registro de cliente con los datos enviados.
+ *     description: |
+ *       Crea un nuevo registro de cliente con los datos enviados por body.
+ * 
+ *       ---
+ * 
+ *       ### 🔒 Datos obligatorios
+ *       Podemos enviar solo los datos obligatorios:
+ *       * **business_name**: Razón social completa o nombre comercial legalmente registrado de la empresa cliente.
+ *       * **tax_id**: Identificador fiscal único de la entidad (ej CUIT/RUT). Se utiliza para la validación de identidad y facturación.
+ *       * **email**: Dirección de correo electrónico institucional. Actúa como identificador de acceso y canal principal de notificaciones legales.
+ *       * **password**: Contraseña de acceso al sistema. Se almacena mediante hashing y debe cumplir políticas de seguridad.
+ * 
+ *       ### 🔓 Datos opcionales
+ *       También podemos enviar los datos opcionales, para un registro mas completo:
+ *       * **phone**: Línea telefónica principal de contacto de la organización.
+ *       * **address**: Domicilio fiscal o dirección de contacto de la organización.
+ *       * **contact_name**: Nombre y apellido de la persona de contacto designada o representante administrativo.
+ *       * **contact_phone**: Telefono de contacto administrativo.
  *     tags:
  *       - Clients
  *     requestBody:
@@ -70,14 +87,40 @@ const getMyProfile = require('../../handlers/clientHandlers/getMyData');
  *     responses:
  *       201:
  *         description: |
- *           ### ✅ Cliente creado con éxito
+ *           ### ✔ Cliente creado correctamente
+ * 
+ *           Recibimos un objeto con los datos básicos del nuevo registro de cliente, detallado en el ejemplo de esta respuesta. El dato que nos sirve ahora mismo es el verification_token, necesario para verificar el mail del cliente.
+ * 
+ *           A partir de este punto, podemos:
+ * 
+ *           ---
+ * 
+ *           ### 📧 Verificar correo del cliente
  *           
- *           Sigue estos pasos para verificar la cuenta:
+ *           Sigue estos pasos para confirmar el mail de la cuenta:
  *           
- *           1. **Copia** el `verification_token` que aparece en el cuerpo de esta respuesta.
- *           2. **Haz click** en el siguiente enlace para ir al validador:
- *              [IR A VERIFICAR EMAIL](#operations-Clients-verifyClient)
- *           3. **Pega** el token en el campo correspondiente y presiona *Execute*.
+ *           1. **Copia** el `verification_token` que aparece en el cuerpo de la respuesta.
+ *           2. **Pega** el token en el campo correspondiente de la siguiente ruta:
+ *              [VERIFICAR CUENTA](#operations-Clients-verifyEmail)
+ *           3. Al ejecutar, la cuenta pasará de "Pendiente" _(pending)_ a "Confirmada" _(confirmed)_.
+ *           
+ *           > `⚠` Esto simula el email de confirmación que recibe el cliente.
+ * 
+ *           ---
+ * 
+ *           ### 🔐 Logear el cliente
+ * 
+ *           Podemos logear el cliente usando el email y contraseña que enviamos en la creación de la cuenta.
+ * 
+ *           1. Debemos **acceder** a la siguiente ruta:
+ *              [LOGEAR CLIENTE](#operations-Clients-loginClient)
+ *           2. **Enviamos** por body el email y password del cliente que acabamos de crear.
+ *           3. Al **Ejecutar** recibiremos el **JWToken** de seguridad como respuesta.
+ *           
+ *           > `🔐` Usamos este token para autenticarnos clickeando el 🔒 en las rutas protegidas o en el **🔒AUTHORIZE** general de esta documentación.
+ * 
+ *           ---
+ * 
  *         content:
  *           application/json:
  *             schema:
@@ -85,6 +128,7 @@ const getMyProfile = require('../../handlers/clientHandlers/getMyData');
  *               properties:
  *                 id:
  *                   type: string
+ *                   format: uuid
  *                 email:
  *                   type: string
  *                 business_name:
@@ -93,8 +137,10 @@ const getMyProfile = require('../../handlers/clientHandlers/getMyData');
  *                   type: string
  *                 status:
  *                   type: string
+ *                   enum: [inactive, pending, confirmed, active]
  *                 is_admin:
  *                   type: integer
+ *                   enum: [0, 1]
  *                 verification_token:
  *                   type: string
  *             example:
@@ -185,7 +231,15 @@ clientsRouter.post('/', postClient);
  * /clients/login:
  *   post:
  *     summary: (👥) Log in para clientes.
- *     description: Recibimos email y contraseña por body, recibimos un JWToken si las credenciales son correctas.
+ *     operationId: loginClient
+ *     description: |
+ *       ### 👤 Log in de clientes
+ *       
+ *       En esta ruta recibimos el JWToken de autenticación que el cliente usará en todas las rutas protegidas de este servidor.
+ *        
+ *       1. Enviamos el **email** y **contraseña** del cliente por body.
+ *       2. Al ejecutar, si las credenciales son correctas, recibiremos el JWToken de autorización para ese cliente 
+ *       3. Actualiza la propiedad "last_login" en el registro del cliente.
  *     tags:
  *       - Clients
  *     requestBody:
@@ -210,8 +264,8 @@ clientsRouter.post('/', postClient);
  *               summary: ✔ Enviamos credenciales correctas
  *               description: Si el mail existe en la base de datos y la contraseña coincide recibiremos como respuesta el token de autenticación con expiración en 7 días.
  *               value:
- *                 email: 123pass123@consultas.com
- *                 password: 123pass123
+ *                 email: cliente@demo.com
+ *                 password: test123password
  *             enviar_datos_erroneos:
  *               summary: ✖ Enviamos credenciales inválidas
  *               description: Si las credenciales no coinciden (mail/contraseña) recibiremos como respuesta un error sin detallar cuál es el dato equivocado, para no exponer datos sensibles y por seguridad.
@@ -222,16 +276,47 @@ clientsRouter.post('/', postClient);
  *               summary: ✖ No enviamos un dato clave
  *               description: De no enviar un dato clave, sea el email o la contraseña, recibiremos como respuesta un mensaje detallando el campo faltante.
  *               value:
- *                 email: 123pass123@consultas.com
+ *                 email: admin@demo.com
  *             enviar_datos_con_formato_inválido:
  *               summary: ✖ Enviamos datos con formato inválido
  *               description: De recibir algún dato con formato inválido, recibiremos como respuesta un mensaje detallando el dato con formato incorrecto.
  *               value:
- *                 email: email#gmail.com
- *                 password: 123pass123
+ *                 email: cliente#demo.com
+ *                 password: test123password
  *     responses:
  *       200:
- *         description: Con las credenciales confirmadas, devolvemos el JWToken firmado del cliente con expiración de 7 (siete) días.
+ *         description: |
+ *           ### 🔐 Log in exitoso
+ *           Con las credenciales confirmadas, recibimos un JWToken firmado del cliente con expiración de 7 (siete) días.
+ * 
+ *           ```
+ *           {
+ *             "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.ey..."
+ *           }
+ *           ```
+ * 
+ *           > Debemos autenticarnos introduciendo el token en el 🔒 de la ruta protegida ó el `AUTHORIZE 🔒` general al principio de esta documentación.
+ * 
+ *           A partir de este punto, podemos:
+ * 
+ *           ---
+ * 
+ *           ### 👤 Consultar datos
+ *           Podemos consultar los datos del cliente, usando el JWToken que conseguimos al logearnos.
+ * 
+ *           1. Debemos dirigirnos a la siguiente ruta:
+ *           [CONSULTAR DATOS PROPIOS](#operations-Clients-getMyData)
+ *           2. Al **ejecutar**, _una vez autenticados_, recibiremos un objeto con los datos básicos del cliente
+ * 
+ *           ---
+ * 
+ *           ### ⛔ Solo cuando se active su cuenta
+ * 
+ *           - [Crear facturas](#operations-Invoices-postInvoice)
+ *           - [Ver mis facturas](#operations-Invoices-getMyInvoices)
+ *           - Actualizar, confirmar o cancelar facturas existentes.
+ * 
+ *           > `⚠` Solo un administrador puede activar la cuenta, previa [confirmación del mail](#operations-Clients-verifyEmail) del cliente.
  *         content:
  *           application/json:
  *             schema:
@@ -299,9 +384,25 @@ clientsRouter.post('/login', loginClient);
  * @swagger
  * /clients/me/verify/{verification_token}:
  *   get:
- *     summary: (👥) Verificamos el cliente mediante un token único.
- *     operationId: verifyClient
- *     description: Si el token coincide con el del cliente y la cuenta está en estado 'pendiente', la actualizamos a 'confirmada' y borramos el token.
+ *     summary: (👥) Verificamos el Email del cliente mediante un token único.
+ *     operationId: verifyEmail
+ *     description: |
+ *       ### 📧 Verificar Email del cliente
+ *       
+ *       Esta ruta recibe el token de verificación único asignado al cliente al momento de la creación de su cuenta y la confirma.
+ * 
+ *       1. Enviamos el verification_token por parametro.
+ *       2. El endpoint busca este token único entre los registros de clientes.
+ *       3. De encontrar coincidencia, cambia el estado del cliente de _'pending'_ (Pendiente) a _'confirmed'_ (Confirmado).
+ * 
+ *       ---
+ * 
+ *       ### 🔄 Ciclo de Vida del Registro
+ *       A continuación se detalla el flujo secuencial de estados que debe atravesar la cuenta antes de poder operar en la plataforma:
+ *       - REGISTRO: La cuenta comienza con el estado **Pending**, porque aún el cliente no confirma su Email.
+ *       - CONFIRMACIÓN: Una vez confirmado el Email del cliente el estado de la cuenta pasa a **Confirmed**, lista para su activación por parte de un administrador.
+ *       - ACTIVACIÓN: Cuando un administrador activa la cuenta, esta ya queda habilitada para manejar facturas y es 100% operativa.
+ * 
  *     tags:
  *       - Clients
  *     parameters:
@@ -310,34 +411,34 @@ clientsRouter.post('/login', loginClient);
  *        required: true
  *        schema:
  *          type: string
- *          example: a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890
- *        description: Token único de verificación del cliente. (32 caracteres hex)<br>Casos de prueba:<br><br>- Token válido    (Simulado)          ->  `7eff170bf6872bff6ce8d4af1c97114aa890da7fa4449554d0378d076906bec1`<br><br>- Error 401       (Formato inválido)  ->  `invalid-token-123`<br><br>- Error 400       (Requerido)         ->  ` `
+ *          example: 7eff170bf6872bff6ce8d4af1c97114aa890da7fa4449554d0378d076906bec1
+ *        description: Token único de verificación del cliente. (32 caracteres hex)
  *     responses:
  *       200:
- *         description: Mail del cliente verificado. Se borra el token, se actualiza el estado a "confirmed" y devolvemos un mensaje de éxito.
+ *         description: |
+ *           ### 📧 Mail del cliente verificado
+ *           Al encontrar coincidencia de token y estado actualizable (pending):          
+ * 
+ *           1. Se borra el token de verificación del registro del cliente.
+ *           2. Se actualiza el estado del cliente a **"Confirmado"** _(confirmed)_.
+ *           3. Recibimos un mensaje confirmando la verificación del cliente como respuesta.
+ * 
+ *           > `⚠` Una vez confirmado el email del cliente, la activación debe ser aprobada por un administrador.
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 code:
- *                   type: string
  *                 message:
  *                   type: string
  *             example:
- *               code: Success
  *               message: Mail del cliente verificado
  *       400:
  *         description: Se envió un token vacío, inválido o la cuenta ya fue verificada.
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                 code:
- *                   type: string
+ *               $ref: '#/components/schemas/errorMessage'
  *             examples:
  *               token_requerido:
  *                 summary: ✖ Token no recibido
@@ -359,12 +460,7 @@ clientsRouter.post('/login', loginClient);
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                 code:
- *                   type: string
+ *               $ref: '#/components/schemas/errorMessage'
  *             example:
  *               error: Error interno del servidor
  *               code: INTERNAL_SERVER_ERROR
@@ -376,20 +472,32 @@ clientsRouter.get('/me/verify/:verification_token', verifyMail);
  * @swagger
  * /clients/me/reactivate/{verification_token}:
  *   patch:
- *     summary: (👥) Reactivamos la cuenta del cliente.
- *     description: Usamos el token de verificación para buscar el cliente y actualizar su estado a 'active', borrando el token en el proceso (NULL).
+ *     summary: (👥) Reactivamos la cuenta del cliente con su token.
+ *     operationId: reactivateMyAccount
+ *     description: |
+ *       ### ✅👤 Reactivamos nuestra cuenta
+ *       Usando el token de verificación que recibe la ruta por params, buscamos el cliente y re-activamos su cuenta.
+ * 
+ *       1. Buscamos entre los registros de cliente el dueño del token recibido por parametro.
+ *       2. Al encontrar coincidencia, actualizamos el estado del cliente a 'Activo' _(active)_ y borramos el token de verificación.
  *     tags:
  *       - Clients
  *     parameters:
  *      - in: path
  *        name: verification_token
+ *        description: Token único de verificación del cliente. (64 caracteres hex)
  *        required: true
  *        schema:
  *          type: string
  *          example: a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890a1b2c3d4e5f67890
  *     responses:
  *       200:
- *         description: Devuelve un mensaje confirmando el cambio de estado del cliente.
+ *         description: |
+ *           ###👤✅ Cuenta re-activada con éxito
+ *           Devuelve un mensaje confirmando el cambio de estado del cliente.
+ * 
+ *           - Cambiamos el estado del cliente a 'active'
+ *           - Borramos el 'verification_token' del registro del cliente
  *         content:
  *           application/json:
  *             schema:
@@ -442,7 +550,14 @@ clientsRouter.use(authMiddleware);
  * /clients/me:
  *   get:
  *     summary: (👤) Entrega los datos del usuario logeado.
- *     description: Entrega los datos básicos del usuario logeado utilizando el token de autorización enviado por headers.
+ *     operationId: getMyData
+ *     description: |
+ *       ### 👤 Datos personales
+ *       Esta ruta entrega los datos básicos del usuario logeado, utilizando el token de autorización enviado por headers.
+ * 
+ *       - El middleware verifica el JWT y su firma.
+ *       - Extrae el ID del token y se lo envía a esta ruta [ next() ].
+ *       - Lo usa para buscar la información de este ID en base de datos.
  *     tags:
  *       - Clients
  *     security:
@@ -471,12 +586,7 @@ clientsRouter.use(authMiddleware);
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                 code:
- *                   type: string
+ *               $ref: '#/components/schemas/errorMessage'
  *             examples:
  *               id_inexistente:
  *                 summary: ✖ No había ID en el token
@@ -493,12 +603,7 @@ clientsRouter.use(authMiddleware);
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                 code:
- *                   type: string
+ *               $ref: '#/components/schemas/errorMessage'
  *             examples:
  *               no_enviamos_token:
  *                 summary: ✖ No enviamos ningún token
@@ -515,34 +620,23 @@ clientsRouter.use(authMiddleware);
  *                 value:
  *                   error: Token expirado
  *                   code: TokenExpiredError
- *       404:
- *         description: No hay un cliente con ese ID en la base de datos
- *         content:
- *           application/json:
- *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                 code:
- *                   type: string
- *             example:
- *               error: Cliente no encontrado
- *               code: CLIENT_NOT_FOUND
  *       500:
- *         description: Error interno del servidor
+ *         description: Error interno o inconsistencia de datos del servidor.
  *         content:
  *           application/json:
  *             schema:
- *               type: object
- *               properties:
- *                 error:
- *                   type: string
- *                 code:
- *                   type: string
- *             example:
- *               error: Error interno del servidor
- *               code: INTERNAL_SERVER_ERROR
+ *               $ref: '#/components/schemas/errorMessage'
+ *             examples:
+ *               el_cliente_desapareció_estando_logeado:
+ *                  summary: ✖ No se encontró datos del cliente logeado
+ *                  value:
+ *                    error: El cliente autenticado ya no existe en el sistema
+ *                    code: DATA_CONSISTENCY_ERROR
+ *               error_interno_general:
+ *                  summary: ✖ Error interno inesperado
+ *                  value:
+ *                    error: Error interno del servidor
+ *                    code: INTERNAL_SERVER_ERROR
  */
 
 clientsRouter.get('/me', getMyProfile);
@@ -773,14 +867,35 @@ clientsRouter.patch('/me/change-password', changeMyPassword);
  * /clients/me/deactivate:
  *   patch:
  *     summary: (👤) Desactiva la cuenta del cliente logeado.
- *     description: Cambia el estado actual de la cuenta del cliente de 'active' a 'inactive'.
+ *     description: |
+ *       ### ❎👤 Desactivar nuestra cuenta
+ *       En esta ruta el cliente desactiva manualmente su cuenta.
+ * 
+ *       1. Usando el ID del **token de autenticación**, buscamos el registro del cliente.
+ *       2. Creamos un token hexadecimal único de 64 caracteres para usar como **verification_token**.
+ *       3. Actualizamos el estado del cliente a **"inactive"**.
+ *       4. Inyectamos el token hexadecimal como nuevo **"verification_token"** para su posterior re-activación. 
  *     tags:
  *       - Clients
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Devuelve un mensaje confirmando la actualización de estado exitosa.
+ *         description: |
+ *           ### ❎ Cuenta desactivada
+ *           Devuelve un mensaje confirmando la actualización de estado y token de verificación exitosa.
+ * 
+ *           A partir de este punto, solo podemos:
+ * 
+ *           ---
+ * 
+ *           ### ✅👤 Iniciar la reactivación de nuestra cuenta
+ *           Para reactivar nuestra cuenta, primero tenemos que pedir que se nos envíe el mail de reactivación.
+ * 
+ *           1. Debemos ir a este endpoint:
+ *             [Pedir mail de reactivación](#operations-Clients-sendReactivationMail)
+ *           2. Se nos enviará al mail un correo de reactivación, como estamos en el modo sandbox- eso no ocurre.
+ *           3. Lo que pasará es que recibiremos el token para reactivar manualmente nuestra cuenta desde la ruta para [reactivar con token](#operations-Clients-reactivateMyAccount) la cuenta.
  *         content:
  *           application/json:
  *             schema:
@@ -825,14 +940,28 @@ clientsRouter.patch('/me/deactivate', deactivateMySelf);
  * /clients/me/reactivate:
  *   post:
  *     summary: (👤) Envía un correo de reactivación al cliente.
- *     description: Envía al correo del cliente un mail que contiene un botón para actualizar el estado de su cuenta.
+ *     operationId: sendReactivationMail
+ *     description: |
+ *       ### 📧👤 Enviar correo de reactivación
+ *       Esta ruta envía al correo del cliente un mail para reactivar su cuenta.
+ * 
+ *       1. Usando el ID del token de autenticación, busca el verification_token asignado a esta cuenta al momento de la desactivación.
+ *       2. Envía al mail del cliente un correo en formato HTML que contenga un botón para re-activar su cuenta.
+ *       3. El botón dentro del mail va a hablar directamente con la ruta de [reactivación de cuentas](#operations-Clients-reactivateMyAccount) proporcionandole el verification_token que necesita para la re-activación.
+ * 
+ *       > `📧` Como estamos en el modo sandbox, debemos tomar el token que recibimos en la respuesta y re-activar manualmente desde la siguiente ruta: [Reactivar cuenta con token](#operations-Clients-reactivateMyAccount)
+ *
  *     tags:
  *       - Clients
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Devuelve un mensaje confirmando el envío del correo de reactivación.
+ *         description: |
+ *           ### ✅📧 Correo de reactivación enviado
+ *           Devuelve un mensaje confirmando el envío del correo de reactivación y el token del cliente.
+ * 
+ *           > `⚠` Aclaración importante: Como estamos en el modo sandbox, la respuesta tiene también el token de verificación del cliente. Esto `NO` ocurre así en producción, solo se envía el correo al cliente con un botón que siga el proceso, filtrar el token en esta respuesta es un riesgo de seguridad adrede para facilitarle a quien esté probando el acceso a dicho token.
  *         content:
  *           application/json:
  *             schema:
@@ -840,8 +969,11 @@ clientsRouter.patch('/me/deactivate', deactivateMySelf);
  *              properties:
  *                message:
  *                  type: string
+ *                token:
+ *                  type: string
  *             example:
  *                 message: Mail de reactivación enviado
+ *                 token: 7eff170bf6872bff6ce8d4af1c97114aa890da7fa4449554d0378d076906bec1
  *       500:
  *         description: Error interno o inconsistencia de datos del servidor.
  *         content:

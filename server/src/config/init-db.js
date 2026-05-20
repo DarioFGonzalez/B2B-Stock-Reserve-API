@@ -76,9 +76,11 @@ const tables = {
 };
 
 async function seedTestData() {
-    const hashCliente = await bcrypt.hash('test123', 10);
-    const hashAdmin = await bcrypt.hash('test123', 10);
+    const hashUnverified = await bcrypt.hash('test123password', 10);
+    const hashCliente = await bcrypt.hash('test123password', 10);
+    const hashAdmin = await bcrypt.hash('test123password', 10);
 
+    const unverifiedId = 'aaaaaaa1-aaa1-aaa1-aaa1-aaaaaaaaaaa1';
     const clienteId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
     const adminId = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
     const now = new Date();
@@ -86,14 +88,34 @@ async function seedTestData() {
     await pool.query(`
         INSERT INTO clients (
             id, business_name, tax_id, email, password, phone, address,
+            contact_name, contact_phone, status, is_admin, email_verified_at, approved_at, verification_token
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+            business_name      = LEFT(business_name, 255),
+            tax_id             = tax_id,
+            email              = email,
+            password           = password,
+            status             = status,
+            is_admin           = is_admin,
+            verification_token = verification_token
+    `, [
+        unverifiedId, 'Cliente Sin Verificar', '31-12345678-1', 'unverified@demo.com', hashUnverified,
+        '1145678902', 'Av. del Libertador 4321', 'Jorge Quiroga', '1156789013',
+        'pending', 0, null, null, '7eff170bf6872bff6ce8d4af1c97114aa890da7fa4449554d0378d076906bec1'
+    ]);
+
+    await pool.query(`
+        INSERT INTO clients (
+            id, business_name, tax_id, email, password, phone, address,
             contact_name, contact_phone, status, is_admin, email_verified_at, approved_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
-            business_name = VALUES(business_name),
-            email = VALUES(email),
-            password = VALUES(password),
-            status = VALUES(status),
-            is_admin = VALUES(is_admin)
+            business_name      = LEFT(business_name, 255),
+            tax_id             = tax_id,
+            email              = email,
+            password           = password,
+            status             = status,
+            is_admin           = is_admin
     `, [
         clienteId, 'Cliente Demo', '30-12345678-9', 'cliente@demo.com', hashCliente,
         '1145678901', 'Av. Corrientes 1234', 'Juan Carlos', '1156789012',
@@ -106,38 +128,39 @@ async function seedTestData() {
             contact_name, contact_phone, status, is_admin, email_verified_at, approved_at
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON DUPLICATE KEY UPDATE
-            business_name = VALUES(business_name),
-            email = VALUES(email),
-            password = VALUES(password),
-            status = VALUES(status),
-            is_admin = VALUES(is_admin)
+            business_name      = LEFT(business_name, 255),
+            tax_id             = tax_id,
+            email              = email,
+            password           = password,
+            status             = status,
+            is_admin           = is_admin
     `, [
         adminId, 'Admin Demo', '30-87654321-0', 'admin@demo.com', hashAdmin,
         '1145678902', 'Av. Santa Fe 5678', 'Maria Gonzalez', '1156789013',
         'active', 1, now, now
     ]);
 
-    const products = [
+    const productsList = [
         ['e7b49539-49b0-11f1-acdd-507b9d97da6f', 'SKU-001', 'Notebook Gamer', 'i7, 16GB RAM, RTX 3060', 'Electronica', 850000.00, 50, 0],
         ['e7b50924-49b0-11f1-acdd-507b9d97da6f', 'SKU-002', 'Mouse Inalambrico', 'Logitech MX Master 3', 'Electronica', 45000.00, 150, 0],
         ['e7b58c1f-49b0-11f1-acdd-507b9d97da6f', 'SKU-003', 'Teclado Mecanico', 'Redragon Kumara', 'Electronica', 35000.00, 80, 5],
         ['e7b5f3e4-49b0-11f1-acdd-507b9d97da6f', 'SKU-004', 'Monitor 24"', 'Full HD, IPS, 75Hz', 'Electronica', 180000.00, 30, 10]
     ];
 
-    for (const p of products) {
+    for (const p of productsList) {
         await pool.query(`
             INSERT INTO products (id, sku, name, description, category, unit_price, stock, reserved_stock, is_active)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
             ON DUPLICATE KEY UPDATE
-                name = VALUES(name),
-                unit_price = VALUES(unit_price),
-                stock = VALUES(stock),
-                reserved_stock = VALUES(reserved_stock)
+                name           = name,
+                unit_price     = unit_price,
+                stock          = stock,
+                reserved_stock = reserved_stock
         `, p);
     }
 
     const [productRows] = await pool.query(`
-        SELECT id, unit_price FROM products WHERE sku IN ('SKU-001', 'SKU-002')
+        SELECT id, sku, unit_price FROM products WHERE sku IN ('SKU-001', 'SKU-002')
     `);
 
     const producto1 = productRows.find(p => p.sku === 'SKU-001');
@@ -150,7 +173,7 @@ async function seedTestData() {
         VALUES (?, ?, 'draft', 'Carrito de prueba', NOW())
         ON DUPLICATE KEY UPDATE
             status = 'draft',
-            notes = VALUES(notes)
+            notes  = notes
     `, [invoiceId, clienteId]);
 
     if (producto1) {
@@ -158,9 +181,9 @@ async function seedTestData() {
             INSERT INTO invoice_items (invoice_id, product_id, quantity, unit_price, subtotal)
             VALUES (?, ?, 2, ?, ?)
             ON DUPLICATE KEY UPDATE
-                quantity = VALUES(quantity),
-                unit_price = VALUES(unit_price),
-                subtotal = VALUES(subtotal)
+                quantity   = quantity,
+                unit_price = unit_price,
+                subtotal   = subtotal
         `, [invoiceId, producto1.id, producto1.unit_price, producto1.unit_price * 2]);
     }
 
@@ -169,10 +192,18 @@ async function seedTestData() {
             INSERT INTO invoice_items (invoice_id, product_id, quantity, unit_price, subtotal)
             VALUES (?, ?, 3, ?, ?)
             ON DUPLICATE KEY UPDATE
-                quantity = VALUES(quantity),
-                unit_price = VALUES(unit_price),
-                subtotal = VALUES(subtotal)
+                quantity   = quantity,
+                unit_price = unit_price,
+                subtotal   = subtotal
         `, [invoiceId, producto2.id, producto2.unit_price, producto2.unit_price * 3]);
+    }
+
+    if (producto1 || producto2) {
+        await pool.query(`
+            UPDATE invoices 
+            SET total = (SELECT SUM(subtotal) FROM invoice_items WHERE invoice_id = ?)
+            WHERE id = ?
+        `, [invoiceId, invoiceId]);
     }
 }
 
@@ -183,7 +214,7 @@ async function initializeDatabase() {
         await pool.query(tables.invoices);
         await pool.query(tables.invoice_items);
         await seedTestData();
-        console.log('DDBB inyectada con dummys');
+        console.log('DDBB inyectada con dummys de forma segura.');
     } catch (error) {
         console.error('Error inicializando la base de datos:', error.message);
         throw error;
