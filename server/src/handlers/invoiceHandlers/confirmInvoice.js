@@ -13,7 +13,7 @@ const confirmInvoice = async (req, res) => {
         const { payment_terms, notes } = req.body;
         validatePaymentTerms(payment_terms);
 
-        const [rows] = await connection.query('SELECT status FROM invoices WHERE client_id = ?', [ id ]);
+        const [rows] = await connection.query('SELECT status FROM invoices WHERE status = draft AND client_id = ?', [ id ]);
         if(rows.length===0) {
             throw createError('No se encontró ningún invoice activo', 404, 'INVOICE_NOT_FOUND');
         }

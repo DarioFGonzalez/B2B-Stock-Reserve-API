@@ -626,7 +626,41 @@ invoicesRouter.patch('/', updateInvoice);
  *   post:
  *     summary: (👤) Confirmamos la factura activa.
  *     operationId: confirmMyInvoice
- *     description: Cambiamos el estado de la factura actual a "Confirmed", reservamos stock, creamos fechas de emisión y vencimiento usando los terminos de pago suministrados.
+ *     description: |
+ *       ### ✅📃 Confirmar la factura activa
+ *       En esta ruta tomamos la factura activa y la confirmamos, reservando stock para cada producto y agregando datos clave a la factura.
+ * 
+ *       ---
+ * 
+ *       ## Datos requeridos
+ *       Esta ruta espera un objeto con los siguientes datos:
+ *       1. payment_ters: Término de pago elegido por el cliente, puede ser a 30, 60, 90 o 120 días.
+ *       2. notes: Notas adicionales sobre la factura en cuestión.
+ * 
+ *       ```json
+ *       {
+ *         "payment_terms": 60,         // <-- Dato clave: Con este dato calculamos la fecha de vencimiento de pago.
+ *         "notes": "Este lote debe ser entregado en conjunto con la factura ID aaa1-aa1-aaaa1-aaaaa1"  // <-- Opcional
+ *       }
+ *       ```
+ * 
+ *       ---
+ * 
+ *       ## Proceso
+ *       Esta ruta se cerciora de lo siguiente:
+ *       > `✋🔓` **Inicia transacción**
+ *       1. Confirma la validez de los términos de pago recibidos
+ *       2. Confirma la existencia de una factura activa a nombre del cliente logeado
+ *       3. Checkea disponibilidad de stock para cada producto relacionado a esta factura
+ *       4. Actualiza el stock reservado para cada producto relacionado a esta factura
+ *       5. Actualiza la factura, agregando:
+ *         - invoice_number
+ *         - issue_date
+ *         - due_date
+ *         - payment_terms
+ *         - total
+ *         - notes
+ *       > `🤝🔒` **Commitea la transacción**
  *     tags:
  *       - Invoices
  *     security:
@@ -673,7 +707,13 @@ invoicesRouter.patch('/', updateInvoice);
  *                   notes: Se decidió dar 15 días como termino de pago.
  *     responses:
  *       200:
- *         description: En caso de que el proceso termine correctamente, recibimos un mensaje de confirmación junto con el id del invoice y su invoice_number.
+ *         description: |
+ *           ### 🤝📃 Confirmación exitosa
+ *           En caso de que el proceso termine correctamente, recibimos un mensaje de confirmación junto con el id del invoice y su invoice_number.
+ * 
+ *           Datos actualizados:
+ *           - Datos y fechas de la factura
+ *           - Stock reservado de los productos involucrados
  *         content:
  *           application/json:
  *             schema:
@@ -750,7 +790,27 @@ invoicesRouter.post('/confirm', confirmInvoice);
  * /invoices/{id}/cancel:
  *   post:
  *     summary: (👤) Cancelamos la factura dueña del ID enviado.
- *     description: Al cancelar la factura, liberamos el stock reservado y asentamos fechas antes de archivar el registro de esta factura.
+ *     description: |
+ *       ### ❎📃 Cancelación de factura confirmada
+ *       En esta ruta enviamos por parametro el ID de una factura previamente confirmada para cancelarla, liberando el stock reservado de todos sus items y actualizando el registro de la misma.
+ * 
+ *       ---
+ * 
+ *       ## Datos requeridos
+ *       Esta ruta espera como único dato el **ID** de la factura a cancelar, la misma debe estar en estado 'confirmed'.
+ * 
+ *       ---
+ * 
+ *       ## Proceso
+ *       Esta ruta, fuera de las validaciones de seguridad y formatos, se cerciosa de lo siguiente:
+ * 
+ *       > `✋🔓` **Inicia transacción**
+ * 
+ *       1. Que el estado actual de la factura sea 'confirmed'
+ *       2. Calcula y actualiza el nuevo stock de los productos relacionados
+ *       3. Actualiza el estado de la factura a 'cancelled'
+ * 
+ *       > `🤝🔒` **Commitea la transacción**
  *     tags:
  *       - Invoices
  *     security:
@@ -1022,7 +1082,28 @@ invoicesRouter.get('/:id', getInvoiceById);
  * /invoices/{id}/deliver:
  *   post:
  *     summary: (🔐) Actualiza el estado del invoice y descuenta stock.
- *     description: Actualiza a "delivered" (entregado) el estado del invoice y decuenta stock de todos los productos relacionados.
+ *     description: |
+ *       ### 🚚📃 Entrega al cliente
+ *       Esta ruta actualiza datos clave del invoice y decuenta el stock real de todos los productos relacionados.
+ * 
+ *       ---
+ * 
+ *       ## Datos requeridos
+ *       Esta ruta solo requiere el **ID** del invoice a entregar.
+ * 
+ *       ---
+ * 
+ *       ## Proceso
+ *       Esta ruta se cerciora de lo siguiente:
+ * 
+ *       > `✋🔓` **Inicia transacción**
+ * 
+ *       1. Que el estado del invoice sea "confirmed"
+ *       2. Recheckea la disponibilidad de stock para entrega
+ *       3. Actualiza el stock real y reservado para los productos relacionados
+ *       4. Actualiza el estado del invoice a 'delivered' y delivered_at con la fecha actual
+ * 
+ *       > `🤝🔒` **Commitea la transacción**
  *     tags:
  *       - Invoices
  *     security:
