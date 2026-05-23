@@ -21,9 +21,30 @@ invoicesRouter.use(activeClientOnly);
  * @swagger
  * /invoices:
  *   post:
- *     summary: (👤) Crear un nuevo registro de factura.
+ *     summary: (👤) Crea un nuevo registro de factura.
  *     operationId: postInvoice
- *     description: Crea una nueva factura en estado "Draft" a nombre del cliente que logeado. Recibe por body el id del primer producto y la cantidad del mismo a agregar. 
+ *     description: |
+ *       ### 📃 Creación de una nueva factura
+ *       En esta ruta, creamos una factura a nombre del cliente logeado. 
+ * 
+ *       1. Enviamos por body el id del primer producto y la cantidad del mismo a agregar.
+ *       ```json
+ *       {
+ *         "product_id": "e7b50924-49b0-11f1-acdd-507b9d97da6f",
+ *         "quantity": 10
+ *       }
+ *       ``` 
+ *       2. La ruta se cerciora de lo siguiente:
+ *       - Cantidad mayor a cero
+ *       - Que no exista otra factura activa
+ *       - Que el producto exista
+ *       - Que haya suficiente stock del producto que estamos agregando
+ *       3. De estar todo en orden:
+ *       - Crea la factura a nombre del cliente.
+ *       - Crea el registro en la tabla intermedia entre Factura y Producto (invoice_items)
+ *       - Devuelve el ID de la factura recién creada.
+ * 
+ *       > `🤝` Todo este proceso se lleva a cabo utilizando transacciones para mantener un código atómico y evitar condiciones de carrera.
  *     tags:
  *       - Invoices
  *     security:
@@ -78,6 +99,24 @@ invoicesRouter.use(activeClientOnly);
  *         description: |
  *           ### ✅ Factura creada con éxito
  *           La factura se crea exitosamente en estado 'Draft'. Recibimos el ID de la factura recién creada como respuesta.
+ * 
+ *           Ahora que tenemos una factura activa, podemos:
+ * 
+ *           ---
+ * 
+ *           ### 🔎📃 Consultar datos de la **factura activa**
+ *           Podemos ver los detalles y productos relacionados con la factura activa desde la siguiente ruta:
+ *           - [Consultar factura activa](#operations-Invoices-getMyActiveInvoice)
+ * 
+ *           ---
+ * 
+ *           ### ➕📃 Agregar items a la **factura activa**
+ *           Podemos agregar, quitar o modificar productos de la factura activa desde la siguiente ruta:
+ *           - [Modificar factura activa](#operations-Invoices-updateMyInvoice)
+ * 
+ *           ---
+ * 
+ *           
  *         content:
  *           application/json:
  *             schema:
@@ -176,14 +215,20 @@ invoicesRouter.post('/', postInvoice);
  *   get:
  *     summary: (👤) Entrega las facturas del usuario logeado.
  *     operationId: getMyInvoices
- *     description: Entrega un array con las facturas del usuario logeado.
+ *     description: |
+ *       ### 📃 Todas nuestras facturas
+ *       Esta ruta entrega un array con la información básica de todas facturas del usuario logeado.
+ * 
+ *       - Utiliza el ID del token de seguridad para la búsqueda.
  *     tags:
  *       - Invoices
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Devuelve un objeto con las facturas de la cuenta logeada.
+ *         description: |
+ *           ### [📃, 📃] Array de facturas ó vacío
+ *           Devuelve un array con la información básica de cada una de las facturas del cliente logeado.
  *         content:
  *           application/json:
  *             schema:
@@ -218,14 +263,29 @@ invoicesRouter.get('/me', getMyInvoices);
  * /invoices/me/active:
  *   get:
  *     summary: (👤) Entrega todos los datos de la factura activa del cliente logeado.
- *     description: Entrega todos los datos de la factura activa mas los productos relacionados con la misma.
+ *     operationId: getMyActiveInvoice
+ *     description: |
+ *       ### 🔎📃 Todo sobre la factura activa
+ *       Entrega todos los datos de la factura activa del cliente logeado.
+ * 
+ *       - Datos completos de la factura
+ *       - Array con todos los productos relacionados a la misma
  *     tags:
  *       - Invoices
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Devuelve un objeto con la factura activa y todos los productos relacionados en la propiedad "products".
+ *         description: |
+ *           ### ✅📃 Factura activa encontrada
+ *           
+ *           Devuelve un objeto con la factura activa y todos los productos relacionados en la propiedad "products".
+ * 
+ *           ### ❎📃 Sin factura activa
+ *           
+ *           En caso de no tener una factura activa, la ruta devuelve un objeto vacío.
+ * 
+ *           > `📃` Formato de ambas respuestas en los ejemplos más abajo.
  *         content:
  *           application/json:
  *             schema:
@@ -371,21 +431,52 @@ invoicesRouter.get('/me/:invoiceId', getThisInvoice);
 
 /**
  * @swagger
- * /invoices/{id}:
+ * /invoices/:
  *   patch:
  *     summary: (👤) Agregamos productos a la factura activa.
- *     description: Enviamos por body los datos a cambiar, usamos el id del cliente logeado como punto de referencia.
+ *     operationId: updateMyInvoice
+ *     description: |
+ *       ### ➕📃 Agregar items a la factura activa
+ *       En esta ruta enviamos los datos de los productos a agregar,modificar o quitar de la factura activa.
+ * 
+ *       ---
+ * 
+ *       ## Datos requeridos
+ *       Esta ruta espera un array de objetos que contengan la siguiente información:
+ * 
+ *       1. ID del producto a agregar, quitar o modificar
+ *       2. Nueva cantidad (número entero) del producto en la factura
+ * 
+ *       ```json
+ *       [
+ *         {
+ *           "product_id": "e7b58c1f-49b0-11f1-acdd-507b9d97da6f",
+ *           "quantity": 0 // <-- Quitar producto de la factura
+ *         },
+ *         {
+ *           "product_id": "e7b5f3e4-49b0-11f1-acdd-507b9d97da6f",
+ *           "quantity": 4 // <-- Nueva cantidad de este producto en factura
+ *         }
+ *       ]
+ *       ```
+ *       - A tener en cuenta: La cantidad enviada sobre-escribirá la cantidad existente del producto en la factura.
+ *       - Todos los productos en la factura que no se modifiquien o mencionen quedarán tal cual estaban.
+ * 
+ *       > `👤📃` Se tomará la factura activa del cliente logeado para esta operación.
+ * 
+ *       ---
+ * 
+ *       ## Proceso
+ *       Esta ruta se cerciosa de lo siguiente:
+ * 
+ *       1. Confirma la existencia de una factura activa
+ *       2. Confirma haber recibido todos los datos necesarios
+ *       3. Checkea que haya stock necesario para la petición de cada producto
+ *       4. `🤝` De estar todo en orden, ejecuta los cambios.
  *     tags:
  *       - Invoices
  *     security:
  *       - bearerAuth: []
- *     parameters:
- *      - in: path
- *        name: id
- *        required: true
- *        schema:
- *          type: string
- *          example: cccccccc-cccc-cccc-cccc-cccccccccccc
  *     requestBody:
  *       required: true
  *       content:
@@ -445,7 +536,15 @@ invoicesRouter.get('/me/:invoiceId', getThisInvoice);
  *                   ready_to_work: true
  *     responses:
  *       200:
- *         description: En caso de que el proceso termine correctamente, recibimos un mensaje de confirmación.
+ *         description: |
+ *           ### ➕📃 Factura actualizada
+ *           En caso de que el proceso termine correctamente, recibimos un mensaje de confirmación.
+ * 
+ *           ---
+ * 
+ *           Recuerde que puede:
+ *           - [Checkear datos de la factura activa](#operations-Invoices-getMyActiveInvoice)
+ *           - [Confirmar la factura activa](#operations-Invoices-confirmMyInvoice)
  *         content:
  *           application/json:
  *             schema:
@@ -477,34 +576,15 @@ invoicesRouter.get('/me/:invoiceId', getThisInvoice);
  *                 value:
  *                   error: Faltan datos necesarios para la relación
  *                   code: MISSING_RELATION_DATA
- *       403:
- *         description: El invoice no le pertenece al cliente logeado o el estado del invoice es inválido para actualizar.
- *         content:
- *           application/json:
- *             schema:
- *               $ref: '#/components/schemas/errorMessage'
- *             examples:
- *               el_invoice_no_le_pertenece:
- *                 summary: 🚫 El invoice no nos pertenece
- *                 description: Si el invoice ID coincide con un registro existente mas el cliente haciendo la petición no es el dueño del mismo, recibiremos un mensaje de error.
- *                 value:
- *                   error: Este invoice no le pertenece
- *                   code: FORBIDDEN
- *               status_actual_inválido:
- *                 summary: ⛔ Status inválido
- *                 description: Si el invoice no está en estado "draft", no podemos actualizarlo.
- *                 value:
- *                   error: Invoices con estado {estado actual} no pueden modificarse, debe estar en estado "draft" para proceder.
- *                   code: ONLY_DRAFT_INVOICES_CAN_BE_MODIFIED
  *       404:
- *         description: No encontramos un invoice con esa ID en base de datos.
+ *         description: No encontramos un invoice activo registrado a nombre del cliente logeado.
  *         content:
  *           application/json:
  *             schema:
  *               $ref: '#/components/schemas/errorMessage'
  *             example:
- *               error: Invoice no encontrado
- *               code: INVOICE_NOT_FOUND
+ *               error: Invoice activo no encontrado
+ *               code: ACTIVE_INVOICE_NOT_FOUND
  *       409:
  *         description: El stock actual del producto no puede cumplir con la demanda de la solicitud.
  *         content:
@@ -538,13 +618,14 @@ invoicesRouter.get('/me/:invoiceId', getThisInvoice);
  *                    code: INTERNAL_SERVER_ERROR
  */
 
-invoicesRouter.patch('/:id', updateInvoice);
+invoicesRouter.patch('/', updateInvoice);
 
 /**
  * @swagger
  * /invoices/confirm:
  *   post:
  *     summary: (👤) Confirmamos la factura activa.
+ *     operationId: confirmMyInvoice
  *     description: Cambiamos el estado de la factura actual a "Confirmed", reservamos stock, creamos fechas de emisión y vencimiento usando los terminos de pago suministrados.
  *     tags:
  *       - Invoices

@@ -3,21 +3,14 @@ const validation = require('../../utils/validations');
 
 const updateInvoice = async (req, res) => {
     try {
-        const { id } = req.params;
-        validation.validateId(id);
+        const { id } = req.client;
 
-        const [thisInvoice] = await req.pool.query('SELECT status, client_id FROM invoices WHERE id = ?', [ id ]);
+        const [thisInvoice] = await req.pool.query('SELECT id FROM invoices WHERE status = draft AND client_id = ?', [ id ]);
         if(thisInvoice.length===0) {
-            throw createError('Invoice no encontrado', 404, 'INVOICE_NOT_FOUND');
+            throw createError('Invoice activo no encontrado', 404, 'ACTIVE_INVOICE_NOT_FOUND');
         }
 
-        if(thisInvoice[0].client_id!==req.client.id) {
-            throw createError('Este invoice no le pertenece', 403, 'FORBIDDEN');
-        }
-
-        if(thisInvoice[0].status!=='draft') {
-            throw createError(`Invoices con estado ${thisInvoice[0].status} no pueden modificarse, debe estar en estado "draft" para proceder.`, 403, 'ONLY_DRAFT_INVOICES_CAN_BE_MODIFIED');
-        }
+        const invoiceId = thisInvoice[0].id;
 
         const productIds = [];
 
@@ -59,7 +52,7 @@ const updateInvoice = async (req, res) => {
             else {
                 if(fetchedProductInfo.reserved_stock + pInfo.quantity <= fetchedProductInfo.stock)
                 {
-                    finalValues.push(id, pInfo.product_id, pInfo.quantity, fetchedProductInfo.unit_price, pInfo.quantity * fetchedProductInfo.unit_price )
+                    finalValues.push(invoiceId, pInfo.product_id, pInfo.quantity, fetchedProductInfo.unit_price, pInfo.quantity * fetchedProductInfo.unit_price )
                     finalPlaceholders.push( '(?, ?, ?, ?, ?)' );
                 }
                 else
@@ -77,7 +70,7 @@ const updateInvoice = async (req, res) => {
             WHERE invoice_id = ?
             AND product_id IN (${toDestroyPlaceholders.join(', ')})`;
 
-            await req.pool.query(destroyBatchQuery, [id, ...toDestroyValues]);
+            await req.pool.query(destroyBatchQuery, [invoiceId, ...toDestroyValues]);
         }
 
         if(finalPlaceholders.length > 0)
