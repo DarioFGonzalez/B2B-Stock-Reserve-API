@@ -47,8 +47,8 @@ const postClientQueryBuilder = async (queries) => {
 }
 
 const postProductQueryBuilder = (queries) => {
-    const mandatoryColumns = [ 'sku', 'name', 'category', 'unit_price' ];
-    const optionalColumns = [ 'description', 'stock', 'is_active' ];
+    const mandatoryColumns = [ 'sku', 'name', 'category', 'unit_price', 'stock' ];
+    const optionalColumns = [ 'description', 'is_active' ];
 
     checkMandatoryColumns(mandatoryColumns, queries);
 

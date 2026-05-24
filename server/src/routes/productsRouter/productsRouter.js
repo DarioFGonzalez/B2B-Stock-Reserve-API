@@ -118,6 +118,7 @@ productsRouter.get('/search', getProductsByQuery);
  * /products/{id}:
  *   get:
  *     summary: (👥) Entrega todos los datos un producto.
+ *     operationId: getProductById
  *     description: Entrega los datos completos del producto dueño del ID enviado por parametro.
  *     tags:
  *       - Products
@@ -207,7 +208,25 @@ productsRouter.use(authMiddleware, adminOnly);
  * /products:
  *   post:
  *     summary: (🔐) Crear un nuevo registro de producto.
- *     description: Crea un nuevo registro de producto con los datos enviados.
+ *     description: |
+ *       # 🆕📦 Creación de un nuevo producto
+ * 
+ *       En esta ruta creamos un nuevo registro de producto con los datos que se reciben por body.
+ * 
+ *       ---
+ * 
+ *       ## Requisitos
+ *       Esta ruta espera recibir los siguientes datos:
+ * 
+ *       ### Obligatorios
+ *       - sku: Stock Keeping Unit. Código alfanumérico único de identificación comercial. Se utiliza para la gestión de inventario y sincronización con sistemas externos.
+ *       - name: Nombre comercial del producto. Debe ser descriptivo y único para facilitar la búsqueda en el catálogo.
+ *       - category: Categoría o familia a la que pertenece el producto. Utilizada para la segmentación en búsquedas y reportes de inventario.
+ *       - unit_price: Precio unitario de venta en formato decimal. Este valor se captura y congela en la factura al momento de agregar el producto al carrito.
+ *       - stock: Cantidad física total disponible en almacén. Representa la existencia real antes de considerar reservas pendientes de entrega.
+ *       ### Opcionales
+ *       - description: Detalle técnico o comercial del producto. Soporta texto extendido para especificaciones, materiales o dimensiones.
+ *       - is_active: Estado lógico del producto. 1 (activo) permite la venta y visualización; 0 (inactivo) actúa como borrado lógico para preservar la integridad referencial de facturas históricas.
  *     tags:
  *       - Products
  *     security:
@@ -219,14 +238,6 @@ productsRouter.use(authMiddleware, adminOnly);
  *           schema:
  *             $ref: '#/components/schemas/postProduct'
  *           examples:
- *               solo_datos_necesarios:
- *                 summary: ✔ Enviamos solo datos necesarios.
- *                 description: El producto se crea en estado activo y con los valores opcionales en NULL.
- *                 value:
- *                   sku: SKU-015
- *                   name: Silla Gamer
- *                   category: Mobiliario
- *                   unit_price: 200000.00
  *               enviar_con_datos_opcionales:
  *                 summary: ✔ Enviamos datos clave y opcionales.
  *                 description: Se incluyen datos opcionales tener un registro completo del producto desde el inicio.
@@ -238,6 +249,14 @@ productsRouter.use(authMiddleware, adminOnly);
  *                   description: Velador bajo lumen, táctil, múltiples colores y motivos.
  *                   stock: 100
  *                   is_active: 1
+ *               solo_datos_necesarios:
+ *                 summary: ✔ Enviamos solo datos necesarios.
+ *                 description: El producto se crea en estado activo y con los valores opcionales en NULL.
+ *                 value:
+ *                   sku: SKU-015
+ *                   name: Silla Gamer
+ *                   category: Mobiliario
+ *                   unit_price: 200000.00
  *               enviar_datos_extra:
  *                 summary: ⚠ Todo dato extra/inválido será ignorado.
  *                 description: En caso de recibir datos extra ó inválidos estos serán ignorados y se creará el registro con los datos clave recibidos.
@@ -261,7 +280,19 @@ productsRouter.use(authMiddleware, adminOnly);
  *                   is_active: 1
  *     responses:
  *       201:
- *         description: Recibimos un objeto con los datos 
+ *         description: |
+ *           # ✅📦 Prorducto creado exitosamente
+ *           El registro del producto se creó exitosamente, recibimos como respuesta un objeto con los datos del producto en cuestión.
+ * 
+ *           Con el `ID` que recibimos en la respuesta de esta ruta, podemos:
+ * 
+ *           ---
+ * 
+ *           ### 👥 Ruta pública
+ *           - [Consultar los datos](#operations-Products-getProductById) de este producto
+ *           ### 🔐 Solo administradores
+ *           - [Actualizar datos](#operations-Products-updateProduct) del producto
+ *           - [Desactivar](#operations-Products-toggleProduct) el producto
  *         content:
  *           application/json:
  *             schema:
@@ -292,7 +323,8 @@ productsRouter.use(authMiddleware, adminOnly);
  *                   items:
  *                     type: string
  *               example:
- *                 error: Faltan campos obligatorios -> sku, name, category, unit_price 
+ *                 error: >
+ *                   Faltan campos obligatorios: sku, name, category, unit_price
  *                 code: MISSING_REQUIRED_FIELDS
  *                 missingFields: [ sku, name, category, unit_price ]
  *       404:
@@ -345,7 +377,37 @@ productsRouter.post('/', postProduct);
  * /products/{id}:
  *   patch:
  *     summary: (🔐) Actualiza datos del producto.
- *     description: Actualiza los datos enviados por body del producto dueño del ID enviado por parametro.
+ *     operationId: updateProduct
+ *     description: |
+ *       # 🔁📦 Actualizar datos del producto
+ *       En esta ruta enviamos el ID del producto y los datos a actualizar para modificar su registro en base de datos.
+ * 
+ *       ---
+ * 
+ *       ## Datos requeridos
+ *       Esta ruta espera el ID por parametros y los datos a actualizar por body de la siguiente manera:
+ * 
+ *       1. ID por parametros
+ *       ```json
+ *       https://tudominio.com/products/e7b49539-49b0-11f1-acdd-507b9d97da6f
+ *       ```
+ *       2. Datos a modificar por body
+ *       ```json
+ *       {
+ *         "unit_price": 1500.75
+ *       }
+ *       ```
+ * 
+ *       ---
+ * 
+ *       ## Proceso
+ *       Esta ruta se cerciora de lo siguiente:
+ * 
+ *       1. Recibir valores válidos para actualizar
+ *       2. Que el producto exista
+ *       3. Actualiza el registro y lo devuelve actualizado
+ * 
+ *       > `⚠` Todas las excepciones contempladas en los errores ejemplo más abajo.
  *     tags:
  *       - Products
  *     security:
@@ -468,6 +530,7 @@ productsRouter.patch('/:id', updateProduct);
  * /products/{id}/toggle-active:
  *   patch:
  *     summary: (🔐) Alterna el estado del producto [active/inactive].
+ *     operationId: toggleProduct
  *     description: Enviamos un ID por params, el servidor busca ese producto -> encuentra su estado actual -> lo actualiza por su opuesto. [ Active / Inactive ]
  *     tags:
  *       - Products

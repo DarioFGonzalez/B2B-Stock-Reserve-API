@@ -27,6 +27,9 @@ invoicesRouter.use(activeClientOnly);
  *       ### 📃 Creación de una nueva factura
  *       En esta ruta, creamos una factura a nombre del cliente logeado. 
  * 
+ *       ---
+ * 
+ *       ## Requisitos
  *       1. Enviamos por body el id del primer producto y la cantidad del mismo a agregar.
  *       ```json
  *       {
@@ -34,12 +37,17 @@ invoicesRouter.use(activeClientOnly);
  *         "quantity": 10
  *       }
  *       ``` 
- *       2. La ruta se cerciora de lo siguiente:
+ * 
+ *       ---
+ * 
+ *       ## Proceso
+ *       La ruta se cerciora de lo siguiente:
  *       - Cantidad mayor a cero
  *       - Que no exista otra factura activa
  *       - Que el producto exista
  *       - Que haya suficiente stock del producto que estamos agregando
- *       3. De estar todo en orden:
+ *       
+ *       De estar todo en orden:
  *       - Crea la factura a nombre del cliente.
  *       - Crea el registro en la tabla intermedia entre Factura y Producto (invoice_items)
  *       - Devuelve el ID de la factura recién creada.
