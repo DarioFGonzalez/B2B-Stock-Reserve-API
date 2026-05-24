@@ -22,7 +22,7 @@ const getInvoiceWithItems = async (pool, id) => {
     JOIN products ON invoice_items.product_id = products.id
     WHERE invoices.id = ?`;
     
-    const [productsRelated] = await pool.query( getProductsRelatedToInvoice, id );
+    const [productsRelated] = await pool.query( getProductsRelatedToInvoice, [id] );
     
     invoice[0].products = productsRelated;
 

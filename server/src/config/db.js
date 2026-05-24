@@ -1,6 +1,11 @@
 require('dotenv').config({ quiet: true });
 const { DB_HOST, DB_USER, DB_PASSWORD, DB_NAME } = process.env;
 
+const JWT_SECRET = process.env.JWT_SECRET;
+if (!JWT_SECRET) {
+    throw new Error('JWT_SECRET must be defined in .env');
+}
+
 const mysql = require('mysql2/promise');
 
 const pool = mysql.createPool({

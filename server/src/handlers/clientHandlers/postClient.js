@@ -2,6 +2,7 @@ const bcrypt = require('bcrypt');
 const crypto = require('crypto');
 const validation = require('../../utils/validations');
 const { postClientQueryBuilder } = require('../../utils/queryBuilder');
+const createError = require('../../utils/errorBuilder');
 
 const postClient = async (req, res) => {
     try {
@@ -15,7 +16,7 @@ const postClient = async (req, res) => {
 
         const [rows] = await req.pool.query( getQuery, [req.body.email] );
         if(!rows || rows.length===0) {
-            throw createError('Error al recuperar el cliente creado', 'DATA_CONSISTENCY_ERROR', 500);
+            throw createError('Error al recuperar el cliente creado', 500, 'DATA_CONSISTENCY_ERROR');
         }
 
         return res.status(201).json( rows[0] );

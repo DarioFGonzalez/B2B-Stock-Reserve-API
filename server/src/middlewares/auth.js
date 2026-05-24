@@ -1,25 +1,16 @@
 const jwt = require('jsonwebtoken');
+const createError = require('../utils/errorBuilder');
 
 const authMiddleware = async (req, res, next) => {
     try {
         const authHeader = req.headers.authorization;
         if(!authHeader) {
-            throw Object.assign( new Error('No se recibió token via header'),
-            {
-                status: 401,
-                code: "MISSING_AUTH_HEADER",
-                timestamp: new Date().toISOString()
-            })
+            throw createError('No se recibió token via header', 401, 'MISSING_AUTH_HEADER');
         }
 
         const token = authHeader.split(' ')[1];
         if(!token) {
-            throw Object.assign( new Error('No se recibió token via header'),
-            {
-                status: 401,
-                code: "MISSING_AUTH_HEADER",
-                timestamp: new Date().toISOString()
-            })
+            throw createError('No se recibió token via header', 401, 'MISSING_AUTH_HEADER');
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);

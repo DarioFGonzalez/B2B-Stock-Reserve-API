@@ -10,10 +10,12 @@ const confirmInvoice = async (req, res) => {
 
         await connection.beginTransaction();
     
+        const { id } = req.client;
+
         const { payment_terms, notes } = req.body;
         validatePaymentTerms(payment_terms);
 
-        const [rows] = await connection.query('SELECT status FROM invoices WHERE status = draft AND client_id = ?', [ id ]);
+        const [rows] = await connection.query('SELECT id FROM invoices WHERE status = "draft" AND client_id = ?', [ id ]);
         if(rows.length===0) {
             throw createError('No se encontró ningún invoice activo', 404, 'INVOICE_NOT_FOUND');
         }
@@ -24,7 +26,7 @@ const confirmInvoice = async (req, res) => {
 
         let total = 0;
 
-        const invoice = await getInvoiceWithItems(connection, id);
+        const invoice = await getInvoiceWithItems(connection, rows[0].id);
 
         invoice.products.forEach( (invoice_item) => {
             const newReservedStock = invoice_item.reserved_stock + invoice_item.quantity;
@@ -69,7 +71,7 @@ const confirmInvoice = async (req, res) => {
             notes = ?
         WHERE id = ?`;
 
-        const [result] = await connection.query(updateInvoiceQuery, [ invoice_number, parseInt(payment_terms, 10), payment_terms, total, notes, id ]);
+        const [result] = await connection.query(updateInvoiceQuery, [ invoice_number, parseInt(payment_terms, 10), payment_terms, total, notes, rows[0].id ]);
         if(result.affectedRows===0) {
             throw createError('No se actualizó el invoice en el paso final', 500, 'DATA_CONSISTENCY_ERROR');
         }
