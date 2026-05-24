@@ -29,7 +29,7 @@ const getMyProfile = require('../../handlers/clientHandlers/getMyData');
  *       * **password**: Contraseña de acceso al sistema. Se almacena mediante hashing y debe cumplir políticas de seguridad.
  * 
  *       ### 🔓 Datos opcionales
- *       También podemos enviar los datos opcionales, para un registro mas completo:
+ *       También podemos enviar los datos opcionales, para un registro más completo:
  *       * **phone**: Línea telefónica principal de contacto de la organización.
  *       * **address**: Domicilio fiscal o dirección de contacto de la organización.
  *       * **contact_name**: Nombre y apellido de la persona de contacto designada o representante administrativo.
@@ -108,12 +108,12 @@ const getMyProfile = require('../../handlers/clientHandlers/getMyData');
  * 
  *           ---
  * 
- *           ### 🔐 Logear el cliente
+ *           ### 🔐 Iniciar sesion del cliente
  * 
- *           Podemos logear el cliente usando el email y contraseña que enviamos en la creación de la cuenta.
+ *           Podemos autenticar el cliente usando el email y contraseña que enviamos en la creación de la cuenta.
  * 
  *           1. Debemos **acceder** a la siguiente ruta:
- *              [LOGEAR CLIENTE](#operations-Clients-loginClient)
+ *              [AUTENTICAR CLIENTE](#operations-Clients-loginClient)
  *           2. **Enviamos** por body el email y password del cliente que acabamos de crear.
  *           3. Al **Ejecutar** recibiremos el **JWToken** de seguridad como respuesta.
  *           
@@ -302,7 +302,7 @@ clientsRouter.post('/', postClient);
  *           ---
  * 
  *           ### 👤 Consultar datos
- *           Podemos consultar los datos del cliente, usando el JWToken que conseguimos al logearnos.
+ *           Podemos consultar los datos del cliente, usando el JWToken que conseguimos al autenticarnos.
  * 
  *           1. Debemos dirigirnos a la siguiente ruta:
  *           [CONSULTAR DATOS PROPIOS](#operations-Clients-getMyData)
@@ -391,7 +391,7 @@ clientsRouter.post('/login', loginClient);
  *       
  *       Esta ruta recibe el token de verificación único asignado al cliente al momento de la creación de su cuenta y la confirma.
  * 
- *       1. Enviamos el verification_token por parametro.
+ *       1. Enviamos el verification_token por parámetro.
  *       2. El endpoint busca este token único entre los registros de clientes.
  *       3. De encontrar coincidencia, cambia el estado del cliente de _'pending'_ (Pendiente) a _'confirmed'_ (Confirmado).
  * 
@@ -478,7 +478,7 @@ clientsRouter.get('/me/verify/:verification_token', verifyMail);
  *       ### ✅👤 Reactivamos nuestra cuenta
  *       Usando el token de verificación que recibe la ruta por params, buscamos el cliente y re-activamos su cuenta.
  * 
- *       1. Buscamos entre los registros de cliente el dueño del token recibido por parametro.
+ *       1. Buscamos entre los registros de cliente el dueño del token recibido por parámetro.
  *       2. Al encontrar coincidencia, actualizamos el estado del cliente a 'Activo' _(active)_ y borramos el token de verificación.
  *     tags:
  *       - Clients
@@ -508,7 +508,7 @@ clientsRouter.get('/me/verify/:verification_token', verifyMail);
  *             example:
  *                 message: Estado del cliente actualizado
  *       400:
- *         description: Token con formato inválido, no recibido, no correponde a ningún cliente ó el cliente ya está activo.
+ *         description: Token con formato inválido, no recibido, no corresponde a ningún cliente ó el cliente ya está activo.
  *         content:
  *           application/json:
  *             schema:
@@ -749,7 +749,7 @@ clientsRouter.patch('/me', updateMyProfile);
  * /clients/me/change-password:
  *   patch:
  *     summary: (👤) Actualiza la contraseña del cliente logeado.
- *     description: Utiliza el token de seguridad para identificar al cliente. Recibe la contraseña actual y la nueva por body, checkea credenciales y reemplaza la contraseña por la nueva (hasheada) en el registro del cliente.
+ *     description: Utiliza el token de seguridad para identificar al cliente. Recibe la contraseña actual y la nueva por body, Valida credenciales y reemplaza la contraseña por la nueva (hasheada) en el registro del cliente.
  *     tags:
  *       - Clients
  *     security:
@@ -811,7 +811,7 @@ clientsRouter.patch('/me', updateMyProfile);
  *             example:
  *                 message: Contraseña actualizada exitosamente
  *       400:
- *         description: Falta algúna contraseña, la nueva tiene un formáto inválido o ambas contraseñas son iguales.
+ *         description: Falta alguna contraseña, la nueva tiene un formato inválido o ambas contraseñas son iguales.
  *         content:
  *           application/json:
  *             schema:
@@ -1193,7 +1193,7 @@ clientsRouter.patch('/:id/toggle', toggleClient);
  * /clients/{id}/toggle-admin:
  *   patch:
  *     summary: (🔐) Alterna permisos de administrador [active/inactive].
- *     description: Cambia los permisos del cliente dueño del ID enviado por parametros.
+ *     description: Cambia los permisos del cliente dueño del ID enviado por parámetros.
  *     tags:
  *       - Clients
  *     security:
@@ -1252,7 +1252,7 @@ clientsRouter.patch('/:id/toggle', toggleClient);
  *             schema:
  *               $ref: '#/components/schemas/errorMessage'
  *             examples:
- *               datos_dessaparecidos_inesperadamente:
+ *               datos_desaparecidos_inesperadamente:
  *                  summary: ❓ El cliente desapareció durante la operación
  *                  value:
  *                    error: El cliente desapareció durante la operación

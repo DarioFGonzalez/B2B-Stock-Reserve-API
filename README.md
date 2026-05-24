@@ -128,6 +128,20 @@ La interfaz interactiva de pruebas y especificación técnica estará disponible
 
 ---
 
+## [Refactor y QA de Documentación] 2026-05-24
+
+### Auditoría de Calidad y Refinamiento Semántico (Swagger)
+
+Llevé a cabo una revisión profunda de todas las anotaciones JSDoc y esquemas de Swagger en los tres enrutadores.
+
+#### Mejoras clave:
+- **Módulo Products:** Se documentaron exhaustivamente los flujos de consulta (getters con filtros) y la acción de `toggle-active`, asegurando que el contrato OpenAPI refleje correctamente las respuestas de error ante IDs inválidos o inexistentes.
+- **Estandarización de dicción:** Se eliminaron inconsistencias en la nomenclatura, utilizando términos técnicos precisos.
+- **Corrección de typos y formato:** Se ajustaron detalles menores de redacción que afectaban la legibilidad de la documentación interactiva.
+- **Justificación Arquitectónica:** Se blindaron los endpoints de estado (Invoices) bajo el patrón RPC-over-REST, documentando que las acciones `POST` son necesarias para activar máquinas de estado que mutan tablas de inventario de forma atómica.
+
+---
+
 ## 📊 Progreso de Desarrollo del Ecosistema
 
 | Componente Arquitectónico | Estado | Cobertura JSDoc/Swagger |

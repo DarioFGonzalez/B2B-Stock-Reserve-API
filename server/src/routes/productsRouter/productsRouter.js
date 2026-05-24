@@ -119,7 +119,7 @@ productsRouter.get('/search', getProductsByQuery);
  *   get:
  *     summary: (👥) Entrega todos los datos un producto.
  *     operationId: getProductById
- *     description: Entrega los datos completos del producto dueño del ID enviado por parametro.
+ *     description: Entrega los datos completos del producto dueño del ID enviado por parámetro.
  *     tags:
  *       - Products
  *     parameters:
@@ -240,7 +240,7 @@ productsRouter.use(authMiddleware, adminOnly);
  *           examples:
  *               enviar_con_datos_opcionales:
  *                 summary: ✔ Enviamos datos clave y opcionales.
- *                 description: Se incluyen datos opcionales tener un registro completo del producto desde el inicio.
+ *                 description: Se incluyen datos opcionales para tener un registro completo del producto desde el inicio.
  *                 value:
  *                   sku: SKU-016
  *                   name: Velador high-tech Rzrz
@@ -281,7 +281,7 @@ productsRouter.use(authMiddleware, adminOnly);
  *     responses:
  *       201:
  *         description: |
- *           # ✅📦 Prorducto creado exitosamente
+ *           # ✅📦 Producto creado exitosamente
  *           El registro del producto se creó exitosamente, recibimos como respuesta un objeto con los datos del producto en cuestión.
  * 
  *           Con el `ID` que recibimos en la respuesta de esta ruta, podemos:
@@ -385,9 +385,9 @@ productsRouter.post('/', postProduct);
  *       ---
  * 
  *       ## Datos requeridos
- *       Esta ruta espera el ID por parametros y los datos a actualizar por body de la siguiente manera:
+ *       Esta ruta espera el ID por parámetros y los datos a actualizar por body de la siguiente manera:
  * 
- *       1. ID por parametros
+ *       1. ID por parámetros
  *       ```json
  *       https://tudominio.com/products/e7b49539-49b0-11f1-acdd-507b9d97da6f
  *       ```

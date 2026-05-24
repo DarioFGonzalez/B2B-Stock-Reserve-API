@@ -475,11 +475,11 @@ invoicesRouter.get('/me/:invoiceId', getThisInvoice);
  *       ---
  * 
  *       ## Proceso
- *       Esta ruta se cerciosa de lo siguiente:
+ *       Esta ruta se cerciora de lo siguiente:
  * 
  *       1. Confirma la existencia de una factura activa
  *       2. Confirma haber recibido todos los datos necesarios
- *       3. Checkea que haya stock necesario para la petición de cada producto
+ *       3. Valida que haya stock necesario para la petición de cada producto
  *       4. `🤝` De estar todo en orden, ejecuta los cambios.
  *     tags:
  *       - Invoices
@@ -551,7 +551,7 @@ invoicesRouter.get('/me/:invoiceId', getThisInvoice);
  *           ---
  * 
  *           Recuerde que puede:
- *           - [Checkear datos de la factura activa](#operations-Invoices-getMyActiveInvoice)
+ *           - [Validar datos de la factura activa](#operations-Invoices-getMyActiveInvoice)
  *           - [Confirmar la factura activa](#operations-Invoices-confirmMyInvoice)
  *         content:
  *           application/json:
@@ -642,7 +642,7 @@ invoicesRouter.patch('/', updateInvoice);
  * 
  *       ## Datos requeridos
  *       Esta ruta espera un objeto con los siguientes datos:
- *       1. payment_ters: Término de pago elegido por el cliente, puede ser a 30, 60, 90 o 120 días.
+ *       1. payment_terms: Término de pago elegido por el cliente, puede ser a 30, 60, 90 o 120 días.
  *       2. notes: Notas adicionales sobre la factura en cuestión.
  * 
  *       ```json
@@ -659,7 +659,7 @@ invoicesRouter.patch('/', updateInvoice);
  *       > `✋🔓` **Inicia transacción**
  *       1. Confirma la validez de los términos de pago recibidos
  *       2. Confirma la existencia de una factura activa a nombre del cliente logeado
- *       3. Checkea disponibilidad de stock para cada producto relacionado a esta factura
+ *       3. Valida disponibilidad de stock para cada producto relacionado a esta factura
  *       4. Actualiza el stock reservado para cada producto relacionado a esta factura
  *       5. Actualiza la factura, agregando:
  *         - invoice_number
@@ -800,7 +800,7 @@ invoicesRouter.post('/confirm', confirmInvoice);
  *     summary: (👤) Cancelamos la factura dueña del ID enviado.
  *     description: |
  *       ### ❎📃 Cancelación de factura confirmada
- *       En esta ruta enviamos por parametro el ID de una factura previamente confirmada para cancelarla, liberando el stock reservado de todos sus items y actualizando el registro de la misma.
+ *       En esta ruta enviamos por parámetro el ID de una factura previamente confirmada para cancelarla, liberando el stock reservado de todos sus items y actualizando el registro de la misma.
  * 
  *       ---
  * 
@@ -810,7 +810,7 @@ invoicesRouter.post('/confirm', confirmInvoice);
  *       ---
  * 
  *       ## Proceso
- *       Esta ruta, fuera de las validaciones de seguridad y formatos, se cerciosa de lo siguiente:
+ *       Esta ruta, fuera de las validaciones de seguridad y formatos, se cersiora de lo siguiente:
  * 
  *       > `✋🔓` **Inicia transacción**
  * 
@@ -1022,7 +1022,7 @@ invoicesRouter.get('/search', getInvoicesByQuery);
  * /invoices/{id}:
  *   get:
  *     summary: (🔐) Entrega todos los datos de la factura dueña del ID.
- *     description: Entrega todos los datos de la factura dueña del ID que mandamos por parametro.
+ *     description: Entrega todos los datos de la factura dueña del ID que mandamos por parámetro.
  *     tags:
  *       - Invoices
  *     security:
@@ -1092,7 +1092,7 @@ invoicesRouter.get('/:id', getInvoiceById);
  *     summary: (🔐) Actualiza el estado del invoice y descuenta stock.
  *     description: |
  *       ### 🚚📃 Entrega al cliente
- *       Esta ruta actualiza datos clave del invoice y decuenta el stock real de todos los productos relacionados.
+ *       Esta ruta actualiza datos clave del invoice y descuenta el stock real de todos los productos relacionados.
  * 
  *       ---
  * 
@@ -1107,7 +1107,7 @@ invoicesRouter.get('/:id', getInvoiceById);
  *       > `✋🔓` **Inicia transacción**
  * 
  *       1. Que el estado del invoice sea "confirmed"
- *       2. Recheckea la disponibilidad de stock para entrega
+ *       2. ReValida la disponibilidad de stock para entrega
  *       3. Actualiza el stock real y reservado para los productos relacionados
  *       4. Actualiza el estado del invoice a 'delivered' y delivered_at con la fecha actual
  * 

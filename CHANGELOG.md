@@ -1,5 +1,13 @@
 # Changelog
 
+## [Swagger Polish & DX Refinement] - 2026-05-24
+
+### Changed
+- **API Documentation (Swagger/JSDoc):** Refined OpenAPI narratives and endpoint descriptions across `clientsRouter`, `productsRouter`, and `invoicesRouter` to improve Developer Experience (DX) and readability.
+- **Products Module:** Enhanced documentation for product filtering, status toggling, and SKU-based retrieval, ensuring clear schema definitions for public/admin views.
+- **Semantics & Formatting:** Standardized technical terminology, corrected typographical anomalies, and fixed Markdown rendering spacing.
+- **Workflow Clarity:** Enhanced the sequential logic descriptions for invoice state-machines, explicitly clarifying the use of RPC-over-REST methods (`POST`).
+
 ## [Invoices Module] - 2026-05-16
 
 ### Swagger/OpenAPI Documentation Completed
