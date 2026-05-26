@@ -67,13 +67,16 @@ const validatePaymentTerms = (payment_terms) => {
     if(!payment_terms) {
         throw createError('Términos de pago no recibidos', 400, 'PAYMENT_TERMS_REQUIRED');
     }
-
-    const allowedPaymentTerms = [ '30', '60', '90', '120' ];
+    if(typeof payment_terms !== 'number') {
+        throw createError('Términos de pago deben ser un número', 400, 'INVALID_PAYMENT_TERMS_TYPE');
+    }
+    
+    const allowedPaymentTerms = [ 30, 60, 90, 120 ];
     
     if(!allowedPaymentTerms.includes(payment_terms)) {
         throw createError('Término de pago no válido', 400, 'INVALID_PAYMENT_TERM');
     }
-
+        
     return true;
 }
 

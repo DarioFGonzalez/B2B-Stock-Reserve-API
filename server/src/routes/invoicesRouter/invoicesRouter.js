@@ -291,7 +291,7 @@ invoicesRouter.get('/me', getMyInvoices);
  * 
  *           ### ❎📃 Sin factura activa
  *           
- *           En caso de no tener una factura activa, la ruta devuelve un objeto vacío.
+ *           En caso de no tener una factura activa, la ruta devuelve un array vacío.
  * 
  *           > `📃` Formato de ambas respuestas en los ejemplos más abajo.
  *         content:
@@ -299,9 +299,9 @@ invoicesRouter.get('/me', getMyInvoices);
  *             schema:
  *               oneOf:
  *                 - $ref: '#/components/schemas/invoicePrivate'
- *                 - type: 'object'
- *                   description: Objeto vacío cuando no hay factura activa
- *                   example: {}
+ *                 - type: 'array'
+ *                   description: Array vacío cuando no hay factura activa
+ *                   example: []
  *             examples:
  *               con_factura:
  *                 summary: 📃 Existe una factura activa
@@ -329,7 +329,7 @@ invoicesRouter.get('/me', getMyInvoices);
  *                       subtotal: 450000
  *               sin_factura:
  *                 summary: ❓ Sin factura activa
- *                 value: {}
+ *                 value: []
  *       500:
  *         description: Error interno del servidor
  *         content:
@@ -347,8 +347,8 @@ invoicesRouter.get('/me/active', getMyActiveInvoice);
  * @swagger
  * /invoices/me/{invoiceId}:
  *   get:
- *     summary: (👤) Entrega todos los datos de la factura activa del cliente logeado.
- *     description: Entrega todos los datos de la factura activa mas los productos relacionados con la misma.
+ *     summary: (👤) Entrega todos los datos de la factura.
+ *     description: Entrega todos los datos de la factura dueña del ID enviado, siempre y cuando sea del cliente.
  *     tags:
  *       - Invoices
  *     security:
@@ -444,7 +444,7 @@ invoicesRouter.get('/me/:invoiceId', getThisInvoice);
  *     summary: (👤) Agregamos productos a la factura activa.
  *     operationId: updateMyInvoice
  *     description: |
- *       ### ➕📃 Agregar items a la factura activa
+ *       # ➕📃 Agregar items a la factura activa
  *       En esta ruta enviamos los datos de los productos a agregar,modificar o quitar de la factura activa.
  * 
  *       ---
@@ -635,7 +635,7 @@ invoicesRouter.patch('/', updateInvoice);
  *     summary: (👤) Confirmamos la factura activa.
  *     operationId: confirmMyInvoice
  *     description: |
- *       ### ✅📃 Confirmar la factura activa
+ *       # ✅📃 Confirmar la factura activa
  *       En esta ruta tomamos la factura activa y la confirmamos, reservando stock para cada producto y agregando datos clave a la factura.
  * 
  *       ---

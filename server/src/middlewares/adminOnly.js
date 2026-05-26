@@ -22,7 +22,6 @@ const adminOnly = (req, res, next) => {
 
 const activeClientOnly = (req, res, next) => {
     try {
-        console.log(req.client);
         if(req.client?.status!=='active') {
             throw createError('Solo clientes activos.', 403, 'UNAUTHORIZED');
         }

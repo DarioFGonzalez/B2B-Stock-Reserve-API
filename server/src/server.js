@@ -10,10 +10,11 @@ server.use( cors() );
 server.use( express.json() );
 
 server.use( (req, res, next) => {
+    req.pool = pool;
     if (!req.pool) {
     return res.status(500).json({ error: 'Database connection unavailable' });
 }
-    req.pool = pool;
+
     next();
 })
 

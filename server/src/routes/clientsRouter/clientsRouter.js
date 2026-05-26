@@ -1003,7 +1003,7 @@ clientsRouter.use(adminOnly);
  * /clients/all:
  *   get:
  *     summary: (🔐) Entrega todos los usuarios en base de datos.
- *     description: Entrega los datos básicos del usuario logeado utilizando el token de autorización enviado por headers.
+ *     description: Entrega los datos básicos de todos los usuarios en base de datos, siempre y cuando estemos autorizados para ello.
  *     tags:
  *       - Clients
  *     security:
@@ -1123,6 +1123,13 @@ clientsRouter.get('/search', getClientsByQuery);
  *       - Clients
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *      - in: path
+ *        name: id
+ *        required: true
+ *        schema:
+ *          type: string
+ *          example: aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
  *     responses:
  *       200:
  *         description: Devuelve un mensaje confirmando la actualización del estado del cliente.
@@ -1198,6 +1205,13 @@ clientsRouter.patch('/:id/toggle', toggleClient);
  *       - Clients
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *      - in: path
+ *        name: id
+ *        required: true
+ *        schema:
+ *          type: string
+ *          example: aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa
  *     responses:
  *       200:
  *         description: Devuelve un mensaje confirmando la actualización de los permisos del cliente.

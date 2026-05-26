@@ -13,6 +13,7 @@ const confirmInvoice = async (req, res) => {
         const { id } = req.client;
 
         const { payment_terms, notes } = req.body;
+        
         validatePaymentTerms(payment_terms);
 
         const [rows] = await connection.query('SELECT id FROM invoices WHERE status = "draft" AND client_id = ?', [ id ]);
@@ -71,7 +72,7 @@ const confirmInvoice = async (req, res) => {
             notes = ?
         WHERE id = ?`;
 
-        const [result] = await connection.query(updateInvoiceQuery, [ invoice_number, parseInt(payment_terms, 10), payment_terms, total, notes, rows[0].id ]);
+        const [result] = await connection.query(updateInvoiceQuery, [ invoice_number, payment_terms, String(payment_terms), total, notes, rows[0].id ]);
         if(result.affectedRows===0) {
             throw createError('No se actualizó el invoice en el paso final', 500, 'DATA_CONSISTENCY_ERROR');
         }

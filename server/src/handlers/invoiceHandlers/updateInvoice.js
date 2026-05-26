@@ -5,7 +5,7 @@ const updateInvoice = async (req, res) => {
     try {
         const { id } = req.client;
 
-        const [thisInvoice] = await req.pool.query('SELECT id FROM invoices WHERE status = draft AND client_id = ?', [ id ]);
+        const [thisInvoice] = await req.pool.query('SELECT id FROM invoices WHERE status = "draft" AND client_id = ?', [ id ]);
         if(thisInvoice.length===0) {
             throw createError('Invoice activo no encontrado', 404, 'ACTIVE_INVOICE_NOT_FOUND');
         }
