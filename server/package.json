@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "test": "jest --runInBand",
-    "start": "node src/index.js",
+    "start": "node index.js",
     "dev": "cross-env NODE_OPTIONS=--no-deprecation nodemon src/index.js"
   },
   "keywords": [

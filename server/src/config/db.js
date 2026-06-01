@@ -1,5 +1,6 @@
 require('dotenv').config({ quiet: true });
 const { DB_HOST, DB_USER, DB_PASSWORD, DB_NAME } = process.env;
+const isProduction = process.env.NODE_ENV === 'production';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 if (!JWT_SECRET) {
@@ -20,6 +21,10 @@ const pool = mysql.createPool({
     queueLimit: 0,
     decimalNumbers: true,
     charset: 'utf8mb4',
+    //CA
+    ssl: isProduction
+    ? { rejectUnauthorized: true }
+    : {rejectUnauthorized: false },
 });
 
 module.exports = pool;
