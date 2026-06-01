@@ -29,6 +29,10 @@ const options = {
         },
         servers: [
             {
+                url: 'https://b2b-stock-reserve-api.onrender.com/',
+                description: 'Servidor de producción en Render'
+            },
+            {
                 url: 'http://localhost:5000',
                 description: 'Servidor local'
             }
