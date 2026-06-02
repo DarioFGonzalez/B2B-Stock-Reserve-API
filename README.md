@@ -178,7 +178,7 @@ La interfaz interactiva de pruebas y especificación técnica estará disponible
 
 El proyecto está desplegado y funcionando en vivo. La documentación interactiva Swagger puede consultarse en:
 
-🔗 https://b2b-stock-reserve-api.onrender.com/api-docs/#/Products/post_products
+🔗 https://b2b-stock-reserve-api.onrender.com/api-docs/#
 
 Este entorno en producción expone el contrato OpenAPI completo y permite validar los endpoints en tiempo real.
 
