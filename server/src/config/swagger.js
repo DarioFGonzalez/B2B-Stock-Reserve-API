@@ -291,26 +291,75 @@ const options = {
                 updateClient: {
                     type: 'object',
                     properties: {
-                        phone: { type: 'string' },
-                        address: { type: 'string' },
-                        contact_name: { type: 'string' },
-                        contact_phone: { type: 'string' }
+                        phone: { 
+                            type: 'string',
+                            description: 'Número de teléfono actualizado de la organización cliente.'
+                        },
+                        address: { 
+                            type: 'string',
+                            description: 'Nueva dirección comercial o domicilio fiscal del cliente.'
+                        },
+                        contact_name: { 
+                            type: 'string',
+                            description: 'Nombre completo actualizado del representante administrativo designado.'
+                        },
+                        contact_phone: { 
+                            type: 'string',
+                            description: 'Teléfono directo de la persona de contacto o representante legal.'
+                        }
                     }
                 },
                 Product: {
                     type: 'object',
                     properties: {
-                        id: { type: 'string' },
-                        sku: { type: 'string' },
-                        name: { type: 'string' },
-                        description: { type: 'string' },
-                        category: { type: 'string' },
-                        unit_price: { type: 'number', format: 'double' },
-                        stock: { type: 'number' },
-                        reserved_stock: { type: 'number' },
-                        is_active: { type: 'integer', enum: [0, 1] },
-                        created_at: { type: 'string', format: 'date-time' },
-                        updated_at: { type: 'string', format: 'date-time' }
+                        id: { 
+                            type: 'string',
+                            description: 'Identificador único universal (UUID) del producto en el catálogo general.'
+                        },
+                        sku: { 
+                            type: 'string',
+                            description: 'Stock Keeping Unit. Código alfanumérico exclusivo utilizado para el control interno de inventario.'
+                        },
+                        name: { 
+                            type: 'string',
+                            description: 'Nombre o denominación comercial descriptiva del producto.'
+                        },
+                        description: { 
+                            type: 'string',
+                            description: 'Especificaciones técnicas, dimensiones, materiales o detalles del artículo.'
+                        },
+                        category: { 
+                            type: 'string',
+                            description: 'Clasificación o familia logística a la que se asigna el producto.'
+                        },
+                        unit_price: { 
+                            type: 'number', 
+                            format: 'double',
+                            description: 'Precio unitario base del producto en la divisa de facturación.'
+                        },
+                        stock: { 
+                            type: 'number',
+                            description: 'Existencia física real total del producto en las instalaciones o almacén.'
+                        },
+                        reserved_stock: { 
+                            type: 'number',
+                            description: 'Cantidad total de unidades comprometidas y congeladas en transacciones en proceso de entrega.'
+                        },
+                        is_active: { 
+                            type: 'integer', 
+                            enum: [0, 1],
+                            description: 'Estado de visibilidad lógica del producto. 1 = Habilitado, 0 = Inactivo para preservar la integridad referencial histórica.'
+                        },
+                        created_at: { 
+                            type: 'string', 
+                            format: 'date-time',
+                            description: 'Timestamp con la fecha exacta del alta del artículo en el sistema.'
+                        },
+                        updated_at: { 
+                            type: 'string', 
+                            format: 'date-time',
+                            description: 'Timestamp del último cambio registrado en cualquiera de los atributos del producto.'
+                        }
                     }
                 },
                 productPublic: { 
@@ -397,31 +446,102 @@ const options = {
                 updateProduct: {
                     type: 'object',
                     properties: {
-                        name: { type: 'string' },
-                        description: { type: 'string' },
-                        unit_price: { type: 'number', format: 'double' },
-                        stock: { type: 'integer' },
-                        reserved_stock: { type: 'integer' }
+                        name: { 
+                            type: 'string',
+                            description: 'Nuevo nombre comercial descriptivo para el artículo.'
+                        },
+                        description: { 
+                            type: 'string',
+                            description: 'Especificaciones o detalles modificados de la ficha técnica del producto.'
+                        },
+                        unit_price: { 
+                            type: 'number', 
+                            format: 'double',
+                            description: 'Nuevo precio de catálogo. No alterará de manera retroactiva los precios congelados en facturas preexistentes.'
+                        },
+                        stock: { 
+                            type: 'integer',
+                            description: 'Modificación manual o ajuste directo del stock físico total en bodega.'
+                        },
+                        reserved_stock: { 
+                            type: 'integer',
+                            description: 'Ajuste forzado del stock comprometido. Exclusivo para operaciones de auditoría, sincronización de inventario o liquidación de fallas.'
+                        }
                     }
                 },
                 invoicePrivate: {
                     type: 'object',
                     properties: {
-                        id: { type: 'string', format: 'uuid' },
-                        client_id: { type: 'string' },
-                        status: { type: 'string', enum: ['draft', 'confirmed', 'delivered','paid','cancelled']},
-                        invoice_number: { type: 'string' },
-                        issue_date: { type: 'string', format: 'date', nullable: true },
-                        due_date: { type: 'string', format: 'date', nullable: true },
-                        payment_terms: { type: 'integer', enum: [ 30, 60, 90, 120 ] },
-                        total: { type: 'number', format: 'double', nullable: true },
-                        notes: { type: 'string' },
-                        created_at: { type: 'string', format: 'date-time' },
-                        updated_at: { type: 'string', format: 'date-time' },
-                        paid_at: { type: 'string', format: 'date-time', nullable: true },
-                        delivered_at: { type: 'string', format: 'date-time', nullable: true },
+                        id: { 
+                            type: 'string', 
+                            format: 'uuid',
+                            description: 'Identificador universal único (UUID) de la transacción de facturación.'
+                        },
+                        client_id: { 
+                            type: 'string',
+                            description: 'UUID del cliente propietario de la factura para vinculación relacional.'
+                        },
+                        status: { 
+                            type: 'string', 
+                            enum: ['draft', 'confirmed', 'delivered','paid','cancelled'],
+                            description: 'Fase actual de la máquina de estados que rige el ciclo comercial de la transacción.'
+                        },
+                        invoice_number: { 
+                            type: 'string',
+                            description: 'Código de facturación legal de la entidad, autogenerado de forma secuencial al mutar al estado confirmado.'
+                        },
+                        issue_date: { 
+                            type: 'string', 
+                            format: 'date', 
+                            nullable: true,
+                            description: 'Fecha oficial de emisión del comprobante (establecida automáticamente en el cambio a estado confirmado).'
+                        },
+                        due_date: { 
+                            type: 'string', 
+                            format: 'date', 
+                            nullable: true,
+                            description: 'Fecha límite de pago, calculada dinámicamente sumando el intervalo de los payment_terms a la fecha de emisión.'
+                        },
+                        payment_terms: { 
+                            type: 'integer', 
+                            enum: [ 30, 60, 90, 120 ],
+                            description: 'Condiciones de vencimiento financiero expresadas en días de plazo de crédito otorgado.'
+                        },
+                        total: { 
+                            type: 'number', 
+                            format: 'double', 
+                            nullable: true,
+                            description: 'Suma monetaria total calculada de forma atómica a partir de los subtotales congelados en las líneas de ítems.'
+                        },
+                        notes: { 
+                            type: 'string',
+                            description: 'Campo de texto libre destinado a anotaciones logísticas, observaciones de entrega o aclaraciones de cobro.'
+                        },
+                        created_at: { 
+                            type: 'string', 
+                            format: 'date-time',
+                            description: 'Fecha y hora de apertura del documento en fase de borrador (draft).'
+                        },
+                        updated_at: { 
+                            type: 'string', 
+                            format: 'date-time',
+                            description: 'Registro cronológico de la última modificación estructural de la factura.'
+                        },
+                        paid_at: { 
+                            type: 'string', 
+                            format: 'date-time', 
+                            nullable: true,
+                            description: 'Timestamp exacto en el que el flujo financiero se completó y la factura transitó a la fase de cobro efectivo (paid).'
+                        },
+                        delivered_at: { 
+                            type: 'string', 
+                            format: 'date-time', 
+                            nullable: true,
+                            description: 'Timestamp en el que se validó la salida y entrega conforme de los bienes, cerrando la reserva de stock activo (delivered).'
+                        },
                         products: {
                             type: 'array',
+                            description: 'Conjunto desglosado de ítems y productos asociados a la orden con sus cantidades particulares.',
                             items: {
                                 $ref: '#/components/schemas/invoiceItem'
                             }
@@ -431,34 +551,102 @@ const options = {
                 invoicePublic: {
                     type: 'object',
                     properties: {
-                        id: { type: 'string' },
-                        client_id: { type: 'string' },
-                        status: { type: 'string', enum: ['draft', 'confirmed', 'delivered','paid','cancelled']},
-                        total: { type: 'number', format: 'double', nullable: true },
-                        created_at: { type: 'string', format: 'date-time' },
-                        issue_date: { type: 'string', format: 'date', nullable: true },
-                        due_date: { type: 'string', format: 'date', nullable: true },
-                        delivered_at: { type: 'string', format: 'date-time', nullable: true },
-                        paid_at: { type: 'string', format: 'date-time', nullable: true }
+                        id: { 
+                            type: 'string',
+                            description: 'UUID de control de la factura expuesta en consultas generales.'
+                        },
+                        client_id: { 
+                            type: 'string',
+                            description: 'Identificador único del cliente titular del documento.'
+                        },
+                        status: { 
+                            type: 'string', 
+                            enum: ['draft', 'confirmed', 'delivered','paid','cancelled'],
+                            description: 'Estado actual visible del flujo logístico o comercial de la transacción.'
+                        },
+                        total: { 
+                            type: 'number', 
+                            format: 'double', 
+                            nullable: true,
+                            description: 'Suma final acumulada de la operación comercial.'
+                        },
+                        created_at: { 
+                            type: 'string', 
+                            format: 'date-time',
+                            description: 'Fecha y hora del inicio del trámite de facturación.'
+                        },
+                        issue_date: { 
+                            type: 'string', 
+                            format: 'date', 
+                            nullable: true,
+                            description: 'Fecha oficial en la que se despachó y formalizó la transacción.'
+                        },
+                        due_date: { 
+                            type: 'string', 
+                            format: 'date', 
+                            nullable: true,
+                            description: 'Vencimiento del período de gracia otorgado para el abono de los fondos.'
+                        },
+                        delivered_at: { 
+                            type: 'string', 
+                            format: 'date-time', 
+                            nullable: true,
+                            description: 'Fecha y hora de recepción confirmada del envío de stock.'
+                        },
+                        paid_at: { 
+                            type: 'string', 
+                            format: 'date-time', 
+                            nullable: true,
+                            description: 'Momento exacto del registro contable de cancelación de deuda.'
+                        }
                     }
                 },
                 invoiceItem: {
                     type: 'object',
                     properties: {
-                        product_id: { type: 'string' },
-                        product_name: { type: 'string' },
-                        price_at_addition: { type: 'number', format: 'double' },
-                        quantity: { type: 'integer' },
-                        stock: { type: 'integer' },
-                        reserved_stock: { type: 'integer' },
-                        subtotal: { type: 'number', format: 'double' }
+                        product_id: { 
+                            type: 'string',
+                            description: 'UUID de relación con el catálogo de productos.'
+                        },
+                        product_name: { 
+                            type: 'string',
+                            description: 'Nombre comercial del producto replicado en la línea de compra para histórico inmutable.'
+                        },
+                        price_at_addition: { 
+                            type: 'number', 
+                            format: 'double',
+                            description: 'Precio unitario congelado del artículo en el momento exacto en que fue cargado a la factura.'
+                        },
+                        quantity: { 
+                            type: 'integer',
+                            description: 'Volumen de unidades demandadas por el flujo del cliente.'
+                        },
+                        stock: { 
+                            type: 'integer',
+                            description: 'Estado actual disponible en bodega capturado para validación en tiempo de consulta.'
+                        },
+                        reserved_stock: { 
+                            type: 'integer',
+                            description: 'Estado actual de unidades bloqueadas globalmente reflejadas en el ítem.'
+                        },
+                        subtotal: { 
+                            type: 'number', 
+                            format: 'double',
+                            description: 'Resultado monetario lineal calculado para este ítem multiplicando cantidad por precio de adición.'
+                        }
                     }
                 },
                 errorMessage: {
                     type: 'object',
                     properties: {
-                        error: { type: 'string' },
-                        code: { type: 'string' }
+                        error: { 
+                            type: 'string',
+                            description: 'Mensaje narrativo e inteligible redactado para asistir en el diagnóstico rápido de la falla.'
+                        },
+                        code: { 
+                            type: 'string',
+                            description: 'Código semántico y estandarizado del error técnico para el control lógico estructurado desde el cliente Frontend.'
+                        }
                     }
                 }
             },
@@ -483,7 +671,6 @@ const options = {
                 }
             },
             parameters: {
-                //Client queries
                 queryBusinessName: {
                     in: 'query',
                     name: 'business_name',
@@ -547,7 +734,6 @@ const options = {
                     schema: { type: 'string', enum: [ 'pending', 'confirmed', 'active', 'inactive' ] },
                     description: 'Estado actual de la cuenta del cliente. pending = email sin verificar, confirmed = email verificado pendiente aprobación admin, active = cuenta habilitada para operar, inactive = cuenta desactivada por el cliente.'
                 },
-                // Product queries
                 querySku: {
                     in: 'query',
                     name: 'sku',
@@ -597,7 +783,6 @@ const options = {
                     example: 1,
                     description: 'Buscamos por estado del producto [0 = inactivo] [1 = activo]'
                 },
-                // Invoice queries
                 queryIssueDateFrom: {
                     in: 'query',
                     name: 'issue_date_from',

@@ -16,11 +16,51 @@
 
 ---
 
-# 🏭 Backend robusto con Express + MySQL (Queries Puras)
+# 🏭 Backend enterprise con Express + MySQL (Queries Puras)
 
-API REST diseñada para resolver la lógica crítica de un ecosistema mayorista (B2B): gestión de clientes, catálogo de productos, control estricto de inventario y un motor de facturación con transiciones de estado complejas.
+API REST construida para resolver la lógica crítica de un ecosistema mayorista B2B: gestión de clientes, catálogo de productos, control estricto de inventario y un motor de facturación con transiciones de estado gobernadas por reglas de negocio.
 
-Este proyecto fue desarrollado **sin ORM (Sequelize/Prisma)**. Toda la capa de persistencia se implementó mediante queries SQL puras y parametrizadas utilizando pools de conexiones nativos, demostrando control total sobre las consultas, optimización de índices y manejo transaccional manual.
+Proyecto listo para producción que demuestra:
+- diseño de backend empresarial con separación clara entre rutas, handlers, middlewares y utilidades,
+- control absoluto del dominio de facturación mayorista mediante SQL manual y transacciones ACID,
+- seguridad sólida con JWT, roles admin/cliente y protección de recursos sensibles,
+- documentación OpenAPI en vivo para pruebas y validación rápida.
+
+Desarrollado **sin ORM (Sequelize/Prisma)**. Toda la capa de persistencia usa queries SQL puras y parametrizadas sobre pools nativos de MySQL, lo que ofrece control total sobre el rendimiento, la consistencia y el ciclo de vida transaccional.
+
+## 💼 Por qué este proyecto es un activo para un equipo técnico
+
+- Despliegue real en producción con documentación pública de API y endpoints verificables.
+- Implementación robusta de stock reservado y facturación mayorista, minimizando errores de inventario y sobreventa.
+- Manejo transparente de errores con códigos semánticos y validaciones centralizadas.
+- Arquitectura que facilita el mantenimiento: separación de responsabilidades, reutilización y claridad del flujo de datos.
+- Ideal para entrevistas técnicas y pruebas de habilidades backend porque es fácil de ejecutar, auditar y extender.
+
+## 🧩 Tech stack
+
+- Node.js + Express 5
+- MySQL con `mysql2/promise`
+- Autenticación JWT y `bcrypt`
+- Documentación OpenAPI / Swagger UI
+- Validaciones centralizadas y manejo de errores personalizado
+- Jest para pruebas unitarias
+
+## 🧠 Cómo evaluar este proyecto rápido
+
+1. Revisa el flujo de facturación en `server/src/handlers/invoiceHandlers` para ver cómo se maneja el estado `Draft`, `Confirmed`, `Canceled` y `Delivered`.
+2. Verifica el control de transacciones en `server/src/config/db.js` y cómo se usan `START TRANSACTION` / `COMMIT` / `ROLLBACK`.
+3. Comprueba la seguridad en `server/src/middlewares/auth.js` y `server/src/middlewares/adminOnly.js`.
+4. Prueba los endpoints en la instancia desplegada: el ciclo de vida completo de una factura usa `/products`, `/invoices` y los estados de stock.
+5. Ejecuta la suite de tests con `npm test` para ver validaciones de utilidades y lógica crítica.
+
+## 🔍 Qué revisar primero
+
+- `server/src/handlers/invoiceHandlers`: lógica de facturación, confirmación, cancelación y entrega.
+- `server/src/config/db.js`: gestión de transacciones ACID.
+- `server/src/utils/errorBuilder.js`: manejo unificado de errores y respuestas estandarizadas.
+- `server/src/utils/validations.js`: validaciones de payload y formatos.
+- `server/src/middlewares/auth.js` y `server/src/middlewares/adminOnly.js`: control de accesos.
+- `server/test`: pruebas unitarias que validan comportamientos críticos.
 
 ## 🎯 El Desafío del Negocio B2B (¿Qué resuelve?)
 
@@ -110,21 +150,55 @@ El servidor no expone respuestas genéricas ni propaga fallas internas a la inte
 
 ## ⚙️ Instalación y Ejecución
 
-> ⚠️ **Nota crítica de configuración (Swagger & Tokens de prueba):** > Para que los tokens firmados de ejemplo incluidos en la documentación interactiva de Swagger UI (`/api-docs`) funcionen correctamente y no arrojen errores de autenticación, el servidor requiere validar las firmas con una clave criptográfica específica. Es **obligatorio** configurar en el archivo `.env` el hash exacto provisto en las instrucciones de abajo. Si se omite o se genera un string aleatorio, el flujo de pruebas interactivo fallará por discrepancia de firma simétrica.
+> ⚠️ **Nota crítica de configuración (Swagger & Tokens de prueba):** Para que los tokens firmados de ejemplo incluidos en la documentación interactiva de Swagger UI (`/api-docs`) funcionen correctamente y no arrojen errores de autenticación, el servidor requiere validar las firmas con una clave criptográfica específica. Es **obligatorio** configurar en el archivo `.env` el hash exacto provisto en las instrucciones de abajo.
 
 ---
 
+Desde la carpeta `server`:
+
 ```
-git clone https://github.com/DarioFGonzalez/fullstack-express-mysql-raw.git
-cd fullstack-express-mysql-raw/server
+cd server
 npm install
-cp .env.example .env
+# Copiar .env.example a .env
+# Windows PowerShell:
+copy .env.example .env
+# Linux/macOS:
+# cp .env.example .env
+# Reemplazar el valor por la clave segura definida por el equipo o ambiente
 echo "JWT_SECRET=e2b2ff5c05be70cf10f201f8c2e8241020b08fb1a6583c183669a870f1ef44fdf4a0ad18a817004c2baf1b1da28ee2158218edec3db2c21a86b968df5d80b663" >> .env
+npm test
 npm run dev
 ```
-
 La interfaz interactiva de pruebas y especificación técnica estará disponible en:
 🔗 `http://localhost:5000/api-docs`
+
+---
+
+## 🚀 Deployment en Producción
+
+El proyecto está desplegado y funcionando en vivo. La documentación interactiva Swagger puede consultarse en:
+
+🔗 https://b2b-stock-reserve-api.onrender.com/api-docs/#/Products/post_products
+
+Este entorno en producción expone el contrato OpenAPI completo y permite validar los endpoints en tiempo real.
+
+---
+
+## 🎯 Qué demuestra este proyecto de mi perfil técnico
+
+- Desarrollo de una API de backend end-to-end con enfoque en producción y confiabilidad.
+- Gestión de transacciones complejas en MySQL sin ORM, con rollback correcto ante fallos.
+- Diseño de API segura, escalable y fácil de auditar para equipos de producto y operaciones.
+- Habilidad para traducir requisitos de negocio B2B en un flujo técnico robusto y predecible.
+- Entrega de código listo para integración en entornos reales, con documentación interactiva activa.
+
+## 📌 Nota para recruiters y tech leads
+
+Este proyecto no es una prueba trivial. Es una demostración de:
+- autonomía técnica para diseñar y entregar un backend completo,
+- toma de decisiones alineadas con operaciones reales y calidad productiva,
+- rapidez de aprendizaje y adaptación a requisitos de negocio complejos,
+- código que puede revisarse, ejecutarse y escalarse con confianza.
 
 ---
 
